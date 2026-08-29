@@ -1,0 +1,89 @@
+import { getCategories } from "../repo.js";
+import { escapeHtml } from "../util.js";
+
+export function layout(opts: {
+  title: string;
+  description?: string;
+  activeCategorySlug?: string;
+  body: string;
+}): string {
+  const categories = getCategories();
+  const navLinks = categories
+    .map(
+      (c) =>
+        `<a href="/categorie/${c.slug}"${c.slug === opts.activeCategorySlug ? ' style="border-bottom-color:#ea580c"' : ""}>${escapeHtml(c.name)}</a>`
+    )
+    .join("\n");
+
+  return `<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${escapeHtml(opts.title)} — RapidPromo</title>
+  <meta name="description" content="${escapeHtml(opts.description ?? "RapidPromo compare les meilleures promotions du moment et vous redirige vers le prix le plus bas.")}" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container bar">
+      <a href="/" class="logo">Rapid<span>Promo</span></a>
+      <nav class="main-nav">
+        <a href="/">Accueil</a>
+        ${navLinks}
+      </nav>
+      <form class="search-form" action="/recherche" method="get">
+        <input type="search" name="q" placeholder="Rechercher un produit..." required />
+        <button type="submit">Chercher</button>
+      </form>
+    </div>
+  </header>
+
+  <main class="container">
+    ${opts.body}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div>RapidPromo compare des offres et perçoit une commission sur les achats réalisés via ses liens partenaires. Les prix et disponibilités sont susceptibles de changer sur le site du marchand.</div>
+      <div class="links">
+        <a href="/mentions-legales">Mentions légales</a>
+        <a href="/cgu">CGU</a>
+        <a href="/confidentialite">Confidentialité &amp; cookies</a>
+        <a href="/admin">Espace pro</a>
+      </div>
+    </div>
+  </footer>
+
+  <div id="cookie-banner" hidden>
+    <p>RapidPromo utilise des cookies pour mesurer l'audience et suivre les redirections vers ses partenaires (nécessaires au modèle d'affiliation). Voir notre <a href="/confidentialite" style="color:white;">politique de confidentialité</a>.</p>
+    <div class="actions">
+      <button class="refuse" onclick="setCookieChoice('refuse')">Refuser</button>
+      <button class="accept" onclick="setCookieChoice('accept')">Accepter</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var KEY = "rapidpromo_cookie_choice";
+      function getChoice() {
+        var m = document.cookie.match(new RegExp('(?:^|; )' + KEY + '=([^;]*)'));
+        return m ? decodeURIComponent(m[1]) : null;
+      }
+      window.setCookieChoice = function (choice) {
+        document.cookie = KEY + "=" + choice + "; max-age=" + 60 * 60 * 24 * 180 + "; path=/";
+        document.getElementById("cookie-banner").hidden = true;
+      };
+      if (!getChoice()) {
+        document.getElementById("cookie-banner").hidden = false;
+      }
+    })();
+  </script>
+</body>
+</html>`;
+}
+
+export function flashHtml(flash?: { type: "success" | "error"; message: string }): string {
+  if (!flash) return "";
+  return `<div class="flash ${flash.type}">${escapeHtml(flash.message)}</div>`;
+}
