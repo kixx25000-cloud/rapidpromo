@@ -1,0 +1,19 @@
+{
+  "name": "rapidpromo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RapidPromo — comparateur de promotions en affiliation (high-tech, maison, mode)",
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "import:now": "tsx scripts/import-now.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0",
+    "@types/node": "^22.10.0"
+  }
+}
