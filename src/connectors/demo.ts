@@ -10,7 +10,16 @@
 // varient légèrement, dates de fin de promo tournantes, pour que le site ait
 // quelque chose de crédible à montrer avant même d'avoir de vrais accès
 // affiliés.
+//
+// Important : les images de ce connecteur sont volontairement de simples
+// pictogrammes abstraits (voir placeholderImage), pas des photos. Ce sont des
+// produits fictifs, sans marchand réel derrière — leur donner une photo
+// réaliste donnerait l'illusion que ce sont de vraies offres. Dès qu'un
+// connecteur réel est branché (Amazon, Awin, Effinity...), chaque produit
+// importé aura automatiquement sa vraie photo, fournie par le flux officiel
+// du marchand — aucune récupération d'image ailleurs.
 
+import { placeholderImage } from "../util.js";
 import type { Connector, RawOffer } from "../types.js";
 
 interface MasterProduct {
@@ -20,10 +29,6 @@ interface MasterProduct {
   categorySlug: "high-tech" | "maison" | "mode";
   basePrice: number;
   merchants: string[];
-  // Mot-clé utilisé pour choisir une photo d'illustration réaliste (voir
-  // productImageUrl ci-dessous). À remplacer par la vraie image fournie par
-  // le marchand dès qu'un connecteur réel (Amazon, Awin...) est branché.
-  imageKeyword: string;
 }
 
 const MASTER_PRODUCTS: MasterProduct[] = [
@@ -34,7 +39,6 @@ const MASTER_PRODUCTS: MasterProduct[] = [
     categorySlug: "high-tech",
     basePrice: 349,
     merchants: ["TechStore", "ClicDeal", "NumériShop"],
-    imageKeyword: "smartphone",
   },
   {
     id: "ht-ecouteurs-bt",
@@ -43,7 +47,6 @@ const MASTER_PRODUCTS: MasterProduct[] = [
     categorySlug: "high-tech",
     basePrice: 59,
     merchants: ["TechStore", "GrandMag", "NumériShop"],
-    imageKeyword: "wireless-earbuds",
   },
   {
     id: "ht-tv-55-4k",
@@ -52,7 +55,6 @@ const MASTER_PRODUCTS: MasterProduct[] = [
     categorySlug: "high-tech",
     basePrice: 429,
     merchants: ["TechStore", "GrandMag", "ClicDeal"],
-    imageKeyword: "flatscreen-tv",
   },
   {
     id: "ht-montre-connectee",
@@ -61,7 +63,6 @@ const MASTER_PRODUCTS: MasterProduct[] = [
     categorySlug: "high-tech",
     basePrice: 79,
     merchants: ["NumériShop", "ClicDeal"],
-    imageKeyword: "smartwatch",
   },
   {
     id: "ht-aspirateur-robot",
@@ -70,7 +71,6 @@ const MASTER_PRODUCTS: MasterProduct[] = [
     categorySlug: "high-tech",
     basePrice: 249,
     merchants: ["TechStore", "GrandMag"],
-    imageKeyword: "robot-vacuum",
   },
   {
     id: "ma-cafetiere-auto",
@@ -79,7 +79,6 @@ const MASTER_PRODUCTS: MasterProduct[] = [
     categorySlug: "maison",
     basePrice: 199,
     merchants: ["MaisonPlus", "GrandMag", "ClicDeal"],
-    imageKeyword: "espresso-machine",
   },
   {
     id: "ma-friteuse-air",
@@ -88,7 +87,6 @@ const MASTER_PRODUCTS: MasterProduct[] = [
     categorySlug: "maison",
     basePrice: 69,
     merchants: ["MaisonPlus", "GrandMag", "NumériShop"],
-    imageKeyword: "air-fryer",
   },
   {
     id: "ma-set-linge-lit",
@@ -97,7 +95,6 @@ const MASTER_PRODUCTS: MasterProduct[] = [
     categorySlug: "maison",
     basePrice: 39,
     merchants: ["MaisonPlus", "StyleCase"],
-    imageKeyword: "bedding",
   },
   {
     id: "ma-lampe-led-bureau",
@@ -106,7 +103,6 @@ const MASTER_PRODUCTS: MasterProduct[] = [
     categorySlug: "maison",
     basePrice: 24,
     merchants: ["MaisonPlus", "ClicDeal"],
-    imageKeyword: "desk-lamp",
   },
   {
     id: "ma-multicuiseur",
@@ -115,7 +111,6 @@ const MASTER_PRODUCTS: MasterProduct[] = [
     categorySlug: "maison",
     basePrice: 89,
     merchants: ["GrandMag", "MaisonPlus"],
-    imageKeyword: "slow-cooker",
   },
   {
     id: "mo-doudoune-hiver",
@@ -124,7 +119,6 @@ const MASTER_PRODUCTS: MasterProduct[] = [
     categorySlug: "mode",
     basePrice: 79,
     merchants: ["StyleCase", "GrandMag", "ClicDeal"],
-    imageKeyword: "winter-jacket",
   },
   {
     id: "mo-basket-running",
@@ -133,7 +127,6 @@ const MASTER_PRODUCTS: MasterProduct[] = [
     categorySlug: "mode",
     basePrice: 65,
     merchants: ["StyleCase", "NumériShop"],
-    imageKeyword: "running-shoes",
   },
   {
     id: "mo-sac-cabas",
@@ -142,7 +135,6 @@ const MASTER_PRODUCTS: MasterProduct[] = [
     categorySlug: "mode",
     basePrice: 45,
     merchants: ["StyleCase", "GrandMag"],
-    imageKeyword: "leather-tote-bag",
   },
   {
     id: "mo-coffret-soin",
@@ -151,7 +143,6 @@ const MASTER_PRODUCTS: MasterProduct[] = [
     categorySlug: "mode",
     basePrice: 34,
     merchants: ["StyleCase", "MaisonPlus"],
-    imageKeyword: "skincare-cosmetics",
   },
   {
     id: "mo-montre-classique",
@@ -160,20 +151,8 @@ const MASTER_PRODUCTS: MasterProduct[] = [
     categorySlug: "mode",
     basePrice: 55,
     merchants: ["StyleCase", "ClicDeal", "NumériShop"],
-    imageKeyword: "wristwatch",
   },
 ];
-
-// Construit une URL de photo réaliste correspondant au produit, à partir de
-// son mot-clé. `lock` fige une photo précise par produit (sinon l'image
-// changerait à chaque chargement de page). Aucune clé/API requise, aucune
-// maintenance : si le service est momentanément indisponible, seule l'image
-// ne s'affiche pas, le reste du site continue de fonctionner normalement.
-// Dès qu'un vrai connecteur (Amazon, Awin...) est branché, ces photos sont
-// remplacées automatiquement par les vraies images fournies par le marchand.
-function productImageUrl(product: MasterProduct, lock: number): string {
-  return `https://loremflickr.com/640/480/${encodeURIComponent(product.imageKeyword)}?lock=${lock}`;
-}
 
 // Petit générateur pseudo-aléatoire déterministe par exécution (basé sur
 // l'heure), pour que les prix "bougent" un peu à chaque import sans être
@@ -191,8 +170,7 @@ export const demoConnector: Connector = {
   async fetchOffers(): Promise<RawOffer[]> {
     const offers: RawOffer[] = [];
 
-    for (const [productIndex, product] of MASTER_PRODUCTS.entries()) {
-      const productImage = productImageUrl(product, productIndex + 1);
+    for (const product of MASTER_PRODUCTS) {
       for (const merchant of product.merchants) {
         const r = jitter(product.basePrice, product.id + merchant);
         // Remise entre 10% et 45% selon le "hasard" déterministe ci-dessus
@@ -207,7 +185,7 @@ export const demoConnector: Connector = {
           productExternalId: product.id,
           productTitle: product.title,
           productDescription: product.description,
-          productImage,
+          productImage: placeholderImage(product.title),
           categorySlug: product.categorySlug,
           merchantName: merchant,
           price,
