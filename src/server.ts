@@ -3,10 +3,11 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { randomBytes } from "node:crypto";
 
 import { homePage, categoryPage, productPage, searchPage } from "./render/public.js";
 import { mentionsLegalesPage, cguPage, confidentialitePage } from "./render/legal.js";
-import { adminDashboardPage, adminNewOfferPage } from "./render/admin.js";
+import { adminDashboardPage, adminNewOfferPage, adminLoginPage } from "./render/admin.js";
 import { getOfferWithContext, insertManualOffer, logClick } from "./repo.js";
 import { hashIp } from "./util.js";
 import { runImport } from "./importer.js";
@@ -44,18 +45,40 @@ function parseFlash(url: URL): { type: "success" | "error"; message: string } | 
   return { type, message };
 }
 
-function requireBasicAuth(req: IncomingMessage, res: ServerResponse): boolean {
-  const header = req.headers.authorization;
-  if (header?.startsWith("Basic ")) {
-    const decoded = Buffer.from(header.slice(6), "base64").toString("utf-8");
-    const sep = decoded.indexOf(":");
-    const user = decoded.slice(0, sep);
-    const pass = decoded.slice(sep + 1);
-    if (user === env.adminUser && pass === env.adminPass) return true;
+// Sessions admin : jetons aléatoires gardés en mémoire (le serveur tourne en
+// une seule instance). Remplace l'authentification HTTP Basic — dont la boîte
+// de dialogue native du navigateur ne peut pas être remplie par un outil
+// d'automatisation — par une vraie page de connexion HTML classique.
+const adminSessions = new Set<string>();
+const SESSION_COOKIE = "rapidpromo_admin_session";
+
+function parseCookies(req: IncomingMessage): Record<string, string> {
+  const header = req.headers.cookie;
+  const result: Record<string, string> = {};
+  if (!header) return result;
+  for (const part of header.split(";")) {
+    const eq = part.indexOf("=");
+    if (eq === -1) continue;
+    const key = part.slice(0, eq).trim();
+    const value = part.slice(eq + 1).trim();
+    if (key) result[key] = decodeURIComponent(value);
   }
-  res.writeHead(401, { "WWW-Authenticate": 'Basic realm="RapidPromo Admin"' });
-  res.end("Authentification requise.");
-  return false;
+  return result;
+}
+
+function isAdminAuthenticated(req: IncomingMessage): boolean {
+  const cookies = parseCookies(req);
+  const token = cookies[SESSION_COOKIE];
+  return Boolean(token && adminSessions.has(token));
+}
+
+function createAdminSession(res: ServerResponse): void {
+  const token = randomBytes(24).toString("hex");
+  adminSessions.add(token);
+  res.setHeader(
+    "Set-Cookie",
+    `${SESSION_COOKIE}=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${60 * 60 * 12}`
+  );
 }
 
 function getClientIp(req: IncomingMessage): string {
@@ -139,9 +162,38 @@ const server = createServer(async (req, res) => {
       return;
     }
 
-    // Espace admin (protégé par authentification basique)
+    // Connexion à l'espace admin (page HTML classique, avec cookie de session)
+    if (method === "GET" && path === "/admin/login") {
+      send(res, 200, adminLoginPage(parseFlash(url), url.searchParams.get("next") ?? undefined));
+      return;
+    }
+
+    if (method === "POST" && path === "/admin/login") {
+      const body = await readBody(req);
+      const username = String(body.get("username") ?? "");
+      const password = String(body.get("password") ?? "");
+      const next = String(body.get("next") ?? "/admin");
+      if (username === env.adminUser && password === env.adminPass) {
+        createAdminSession(res);
+        res.writeHead(302, { Location: next.startsWith("/admin") ? next : "/admin" });
+        res.end();
+        return;
+      }
+      res.writeHead(302, {
+        Location:
+          "/admin/login?flash=error:" + encodeURIComponent("Identifiant ou mot de passe incorrect."),
+      });
+      res.end();
+      return;
+    }
+
+    // Espace admin (protégé par cookie de session, voir /admin/login ci-dessus)
     if (path === "/admin" || path.startsWith("/admin/")) {
-      if (!requireBasicAuth(req, res)) return;
+      if (!isAdminAuthenticated(req)) {
+        res.writeHead(302, { Location: "/admin/login?next=" + encodeURIComponent(path) });
+        res.end();
+        return;
+      }
 
       if (method === "GET" && path === "/admin") {
         send(res, 200, adminDashboardPage(parseFlash(url)));
