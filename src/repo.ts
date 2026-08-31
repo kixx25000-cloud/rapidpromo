@@ -261,13 +261,17 @@ export function insertManualOffer(input: {
   oldPrice?: number;
   affiliateUrl: string;
   endsAt: string;
+  // URL d'une vraie photo du produit (ex. copiée depuis la fiche produit du
+  // marchand, dans le cadre d'un vrai partenariat d'affiliation). Si absente,
+  // on retombe sur le pictogramme placeholder — jamais une fausse photo.
+  productImage?: string;
 }): number {
   return upsertOfferFromFeed(
     {
       productExternalId: `manuel-${Date.now()}`,
       productTitle: input.productTitle,
       productDescription: input.productDescription,
-      productImage: placeholderImage(input.productTitle),
+      productImage: input.productImage?.trim() || placeholderImage(input.productTitle),
       categorySlug: input.categorySlug,
       merchantName: input.merchantName,
       price: input.price,
