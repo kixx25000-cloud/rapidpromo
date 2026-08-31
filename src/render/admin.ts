@@ -1,5 +1,5 @@
 import { layout, flashHtml } from "./layout.js";
-import { getCategories, getRecentImportRuns, getStats } from "../repo.js";
+import { getAllOffersForAdmin, getCategories, getOfferForAdmin, getRecentImportRuns, getStats } from "../repo.js";
 import { escapeHtml, formatDate } from "../util.js";
 
 export async function adminLoginPage(flash?: { type: "success" | "error"; message: string }, next?: string): Promise<string> {
@@ -68,6 +68,7 @@ export async function adminDashboardPage(flash?: { type: "success" | "error"; me
             <button class="btn" type="submit">Lancer un import maintenant</button>
           </form>
           <a class="btn secondary" href="/admin/offres/nouvelle">+ Ajouter une offre manuellement</a>
+          <a class="btn secondary" href="/admin/offres">Gérer les offres (supprimer)</a>
         </div>
 
         <h2 class="section-title">Derniers imports</h2>
@@ -123,6 +124,67 @@ export async function adminNewOfferPage(flash?: { type: "success" | "error"; mes
         </label>
         <button class="btn" type="submit">Publier l'offre</button>
       </form>
+    `,
+  });
+}
+
+export async function adminOffersPage(flash?: { type: "success" | "error"; message: string }): Promise<string> {
+  const offers = await getAllOffersForAdmin();
+
+  const rows = offers
+    .map((o) => {
+      const price = `${o.price.toFixed(2)} €`;
+      const oldPrice = o.oldPrice ? ` <span style="text-decoration:line-through;color:#9ca3af;">${o.oldPrice.toFixed(2)} €</span>` : "";
+      const statusLabel = o.active ? "Actif" : "Inactif";
+      const statusClass = o.active ? "status-ok" : "status-erreur";
+      return `<tr>
+        <td>${escapeHtml(o.productTitle)}</td>
+        <td>${escapeHtml(o.merchantName)} <span style="color:#9ca3af;">(${escapeHtml(o.merchantNetwork)})</span></td>
+        <td>${price}${oldPrice}</td>
+        <td class="${statusClass}">${statusLabel}</td>
+        <td><a class="btn secondary" href="/admin/offres/${o.id}/supprimer">Supprimer</a></td>
+      </tr>`;
+    })
+    .join("\n");
+
+  return layout({
+    title: "Gérer les offres — Espace pro",
+    body: `
+      <h1>Gérer les offres</h1>
+      <p style="color:#6b7280; max-width:560px;">Toutes les offres publiées sur le site (actives et inactives). Supprimer une offre est définitif — utile par exemple pour retirer une offre de test.</p>
+      ${flashHtml(flash)}
+      <div style="margin-bottom:16px;"><a class="btn secondary" href="/admin">← Retour au tableau de bord</a></div>
+      <table>
+        <thead><tr><th>Produit</th><th>Marchand</th><th>Prix</th><th>Statut</th><th></th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="5">Aucune offre pour le moment.</td></tr>'}</tbody>
+      </table>
+    `,
+  });
+}
+
+export async function adminDeleteOfferPage(offerId: number): Promise<string | null> {
+  const offer = await getOfferForAdmin(offerId);
+  if (!offer) return null;
+
+  return layout({
+    title: "Confirmer la suppression — Espace pro",
+    body: `
+      <div style="max-width:480px; margin:60px auto;">
+        <h1>Confirmer la suppression</h1>
+        <p>Voulez-vous vraiment supprimer définitivement cette offre ?</p>
+        <p style="background:#f9fafb; border-radius:8px; padding:16px; margin:20px 0;">
+          <strong>${escapeHtml(offer.productTitle)}</strong><br/>
+          Marchand : ${escapeHtml(offer.merchantName)}<br/>
+          Prix : ${offer.price.toFixed(2)} €
+        </p>
+        <p style="color:#6b7280; font-size:0.9em;">Cette action est définitive et ne peut pas être annulée.</p>
+        <div style="display:flex; gap:12px; margin-top:24px;">
+          <form method="post" action="/admin/offres/${offer.id}/supprimer">
+            <button class="btn" type="submit" style="background:#dc2626;">Confirmer la suppression</button>
+          </form>
+          <a class="btn secondary" href="/admin/offres">Annuler</a>
+        </div>
+      </div>
     `,
   });
 }
