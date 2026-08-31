@@ -12,6 +12,9 @@
     "start": "tsx src/server.ts",
     "import:now": "tsx scripts/import-now.ts"
   },
+  "dependencies": {
+    "pg": "^8.13.0"
+  },
   "devDependencies": {
     "tsx": "^4.21.0",
     "@types/node": "^22.10.0"
