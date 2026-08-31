@@ -24,6 +24,40 @@ export async function layout(opts: {
     )
     .join("\n");
 
+  // Données structurées (schema.org) sur toutes les pages : aident Google à
+  // identifier RapidPromo comme une marque/organisation à part entière (et
+  // pas seulement une page web), avec une action de recherche interne — un
+  // signal qui favorise l'apparition d'une boîte de recherche ("sitelinks
+  // searchbox") directement dans les résultats Google pour la requête de
+  // marque "RapidPromo" / "rapide promo".
+  const brandJsonLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${SITE_URL}/#organization`,
+        name: "RapidPromo",
+        alternateName: "Rapide Promo",
+        url: SITE_URL,
+        logo: `${SITE_URL}/icons/icon-192.png`,
+        description: DEFAULT_DESCRIPTION,
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${SITE_URL}/#website`,
+        name: "RapidPromo",
+        alternateName: "Rapide Promo",
+        url: SITE_URL,
+        publisher: { "@id": `${SITE_URL}/#organization` },
+        potentialAction: {
+          "@type": "SearchAction",
+          target: `${SITE_URL}/recherche?q={search_term_string}`,
+          "query-input": "required name=search_term_string",
+        },
+      },
+    ],
+  });
+
   return `<!doctype html>
 <html lang="fr">
 <head>
@@ -33,6 +67,7 @@ export async function layout(opts: {
   <meta name="description" content="${escapeHtml(description)}" />
   <link rel="canonical" href="${canonical}" />
   <link rel="stylesheet" href="/style.css" />
+  <script type="application/ld+json">${brandJsonLd}</script>
 
   <!-- Réseaux sociaux : aperçu correct quand un lien RapidPromo est partagé
        (Facebook, X, WhatsApp, Discord, etc.) -->
@@ -72,6 +107,7 @@ export async function layout(opts: {
       <nav class="main-nav">
         <a href="/">Accueil</a>
         ${navLinks}
+        <a href="/guides">Guides</a>
       </nav>
       <form class="search-form" action="/recherche" method="get">
         <input type="search" name="q" placeholder="Rechercher un produit..." required />
@@ -88,6 +124,7 @@ export async function layout(opts: {
     <div class="container">
       <div>RapidPromo compare des offres et perçoit une commission sur les achats réalisés via ses liens partenaires. Les prix et disponibilités sont susceptibles de changer sur le site du marchand.</div>
       <div class="links">
+        <a href="/guides">Guides</a>
         <a href="/mentions-legales">Mentions légales</a>
         <a href="/cgu">CGU</a>
         <a href="/confidentialite">Confidentialité &amp; cookies</a>
