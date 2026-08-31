@@ -32,4 +32,8 @@ export const env = {
   adminPass: process.env.ADMIN_PASS ?? "changez-moi",
   cronToken: process.env.CRON_TOKEN ?? "changez-moi-aussi",
   importIntervalHours: Number(process.env.IMPORT_INTERVAL_HOURS ?? 6),
+  // Chaîne de connexion vers la base Postgres (ex. fournie par Neon), qui
+  // stocke les données de façon permanente — contrairement à un fichier
+  // local, qui disparaissait à chaque redéploiement du site.
+  databaseUrl: process.env.DATABASE_URL ?? "",
 };
