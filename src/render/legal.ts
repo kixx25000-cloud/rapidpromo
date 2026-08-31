@@ -2,7 +2,7 @@ import { layout } from "./layout.js";
 
 const PLACEHOLDER = (label: string) => `<span class="placeholder">${label}</span>`;
 
-export function mentionsLegalesPage(): string {
+export async function mentionsLegalesPage(): Promise<string> {
   return layout({
     title: "Mentions légales",
     body: `
@@ -30,7 +30,7 @@ export function mentionsLegalesPage(): string {
   });
 }
 
-export function cguPage(): string {
+export async function cguPage(): Promise<string> {
   return layout({
     title: "Conditions générales d'utilisation",
     body: `
@@ -56,7 +56,7 @@ export function cguPage(): string {
   });
 }
 
-export function confidentialitePage(): string {
+export async function confidentialitePage(): Promise<string> {
   return layout({
     title: "Confidentialité & cookies",
     body: `
