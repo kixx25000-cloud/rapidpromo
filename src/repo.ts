@@ -154,6 +154,18 @@ const PRODUCT_BEST_PRICE_SELECT = `
   JOIN categories c ON c.id = p.category_id
 `;
 
+// Liste tous les produits actuellement en promo active, pour générer le
+// plan du site (sitemap.xml) consulté par les moteurs de recherche.
+export function getAllActiveProductIds(): number[] {
+  const rows = db
+    .prepare(
+      `SELECT DISTINCT p.id AS id FROM products p
+       JOIN offers o ON o.product_id = p.id AND o.active = 1`
+    )
+    .all() as unknown as { id: number }[];
+  return rows.map((r) => r.id);
+}
+
 export function getHomeDeals(limit = 12): ProductWithBestPrice[] {
   return db
     .prepare(
