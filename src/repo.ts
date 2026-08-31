@@ -318,6 +318,72 @@ export async function getRecentImportRuns(limit = 20) {
   return rows;
 }
 
+// Liste toutes les offres (actives et inactives) pour la page d'administration
+// "Gérer les offres", qui permet de supprimer une offre (ex. une offre de
+// test) directement depuis le site en ligne.
+export async function getAllOffersForAdmin() {
+  const { rows } = await pool.query(
+    `SELECT o.id, o.price, o.old_price AS "oldPrice", o.discount_pct AS "discountPct",
+            o.active, o.ends_at AS "endsAt",
+            p.id AS "productId", p.title AS "productTitle",
+            m.name AS "merchantName", m.network AS "merchantNetwork"
+     FROM offers o
+     JOIN products p ON p.id = o.product_id
+     JOIN merchants m ON m.id = o.merchant_id
+     ORDER BY o.active DESC, p.title ASC, o.price ASC`
+  );
+  return rows as Array<{
+    id: number;
+    price: number;
+    oldPrice: number | null;
+    discountPct: number | null;
+    active: number;
+    endsAt: string;
+    productId: number;
+    productTitle: string;
+    merchantName: string;
+    merchantNetwork: string;
+  }>;
+}
+
+// Une seule offre, avec son contexte produit/marchand — utilisé pour afficher
+// la page de confirmation avant suppression.
+export async function getOfferForAdmin(offerId: number) {
+  const { rows } = await pool.query(
+    `SELECT o.id, o.price, o.active, p.title AS "productTitle", m.name AS "merchantName"
+     FROM offers o
+     JOIN products p ON p.id = o.product_id
+     JOIN merchants m ON m.id = o.merchant_id
+     WHERE o.id = $1`,
+    [offerId]
+  );
+  return rows[0] as
+    | { id: number; price: number; active: number; productTitle: string; merchantName: string }
+    | undefined;
+}
+
+/**
+ * Supprime définitivement une offre (ex. une offre de test ou obsolète) :
+ * ses clics enregistrés, puis l'offre elle-même, puis — si c'était la
+ * dernière offre du produit — la fiche produit devenue orpheline.
+ * Retourne false si l'offre n'existait déjà plus.
+ */
+export async function deleteOffer(offerId: number): Promise<boolean> {
+  const existing = await pool.query(`SELECT product_id AS "productId" FROM offers WHERE id = $1`, [offerId]);
+  if (existing.rowCount === 0) return false;
+  const productId = existing.rows[0].productId as number;
+
+  await pool.query(`DELETE FROM click_logs WHERE offer_id = $1`, [offerId]);
+  await pool.query(`DELETE FROM offers WHERE id = $1`, [offerId]);
+
+  const remaining = await pool.query(`SELECT COUNT(*)::int AS n FROM offers WHERE product_id = $1`, [productId]);
+  if ((remaining.rows[0] as { n: number }).n === 0) {
+    await pool.query(`DELETE FROM products WHERE id = $1`, [productId]);
+  }
+
+  return true;
+}
+
 export async function getStats() {
   const activeOffers = await pool.query(`SELECT COUNT(*)::int AS n FROM offers WHERE active = 1`);
   const totalProducts = await pool.query(`SELECT COUNT(*)::int AS n FROM products`);
