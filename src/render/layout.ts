@@ -1,13 +1,22 @@
 import { getCategories } from "../repo.js";
 import { escapeHtml } from "../util.js";
 
+const SITE_URL = "https://rapidpromo.onrender.com";
+const DEFAULT_DESCRIPTION =
+  "RapidPromo compare les meilleures promotions du moment et vous redirige vers le prix le plus bas.";
+
 export function layout(opts: {
   title: string;
   description?: string;
   activeCategorySlug?: string;
+  path?: string;
+  image?: string;
   body: string;
 }): string {
   const categories = getCategories();
+  const description = opts.description ?? DEFAULT_DESCRIPTION;
+  const canonical = SITE_URL + (opts.path ?? "/");
+  const image = opts.image ?? `${SITE_URL}/icons/icon-192.png`;
   const navLinks = categories
     .map(
       (c) =>
@@ -21,8 +30,22 @@ export function layout(opts: {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(opts.title)} — RapidPromo</title>
-  <meta name="description" content="${escapeHtml(opts.description ?? "RapidPromo compare les meilleures promotions du moment et vous redirige vers le prix le plus bas.")}" />
+  <meta name="description" content="${escapeHtml(description)}" />
+  <link rel="canonical" href="${canonical}" />
   <link rel="stylesheet" href="/style.css" />
+
+  <!-- Réseaux sociaux : aperçu correct quand un lien RapidPromo est partagé
+       (Facebook, X, WhatsApp, Discord, etc.) -->
+  <meta property="og:site_name" content="RapidPromo" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="${escapeHtml(opts.title)} — RapidPromo" />
+  <meta property="og:description" content="${escapeHtml(description)}" />
+  <meta property="og:url" content="${canonical}" />
+  <meta property="og:image" content="${image}" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${escapeHtml(opts.title)} — RapidPromo" />
+  <meta name="twitter:description" content="${escapeHtml(description)}" />
+  <meta name="twitter:image" content="${image}" />
 
   <!-- Application web installable (PWA) : permet d'ajouter RapidPromo sur
        l'écran d'accueil du téléphone (iPhone et Android), comme une appli. -->
