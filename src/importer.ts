@@ -22,21 +22,21 @@ export async function runImport(): Promise<
   const results: Array<{ network: string; imported: number; expired: number; status: string }> = [];
 
   for (const connector of ACTIVE_CONNECTORS) {
-    const runId = startImportRun(connector.networkName);
+    const runId = await startImportRun(connector.networkName);
     const startedAt = nowIso();
     try {
       const offers = await connector.fetchOffers();
       let imported = 0;
       for (const raw of offers) {
-        upsertOfferFromFeed(raw, connector.networkName);
+        await upsertOfferFromFeed(raw, connector.networkName);
         imported++;
       }
-      const expired = expireStaleOffers(connector.networkName, startedAt);
-      finishImportRun(runId, imported, expired, "ok", null);
+      const expired = await expireStaleOffers(connector.networkName, startedAt);
+      await finishImportRun(runId, imported, expired, "ok", null);
       results.push({ network: connector.networkName, imported, expired, status: "ok" });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      finishImportRun(runId, 0, 0, "erreur", message);
+      await finishImportRun(runId, 0, 0, "erreur", message);
       results.push({ network: connector.networkName, imported: 0, expired: 0, status: "erreur: " + message });
     }
   }
