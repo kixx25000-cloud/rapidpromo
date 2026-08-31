@@ -172,6 +172,7 @@ const server = createServer(async (req, res) => {
             oldPrice: body.get("oldPrice") ? Number(body.get("oldPrice")) : undefined,
             affiliateUrl: String(body.get("affiliateUrl")),
             endsAt: new Date(String(body.get("endsAt"))).toISOString(),
+            productImage: body.get("productImage") ? String(body.get("productImage")) : undefined,
           });
           res.writeHead(302, {
             Location: "/admin?flash=success:" + encodeURIComponent("Offre publiée sur le site."),
