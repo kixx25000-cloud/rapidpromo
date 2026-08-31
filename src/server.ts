@@ -8,8 +8,8 @@ import { randomBytes } from "node:crypto";
 import { homePage, categoryPage, productPage, searchPage } from "./render/public.js";
 import { mentionsLegalesPage, cguPage, confidentialitePage } from "./render/legal.js";
 import { guidesIndexPage, guideArticlePage, getGuideSlugs } from "./render/blog.js";
-import { adminDashboardPage, adminNewOfferPage, adminLoginPage } from "./render/admin.js";
-import { getAllActiveProductIds, getCategories, getOfferWithContext, insertManualOffer, logClick } from "./repo.js";
+import { adminDashboardPage, adminNewOfferPage, adminLoginPage, adminOffersPage, adminDeleteOfferPage } from "./render/admin.js";
+import { deleteOffer, getAllActiveProductIds, getCategories, getOfferWithContext, insertManualOffer, logClick } from "./repo.js";
 import { hashIp } from "./util.js";
 import { runImport } from "./importer.js";
 import { ICONS } from "./icons-data.js";
@@ -303,6 +303,34 @@ const server = createServer(async (req, res) => {
         }
         res.end();
         return;
+      }
+
+      if (method === "GET" && path === "/admin/offres") {
+        send(res, 200, await adminOffersPage(parseFlash(url)));
+        return;
+      }
+
+      const deleteMatch = path.match(/^\/admin\/offres\/(\d+)\/supprimer$/);
+      if (deleteMatch) {
+        const offerId = Number(deleteMatch[1]);
+
+        if (method === "GET") {
+          const html = await adminDeleteOfferPage(offerId);
+          if (!html) return notFound(res);
+          send(res, 200, html);
+          return;
+        }
+
+        if (method === "POST") {
+          const ok = await deleteOffer(offerId);
+          res.writeHead(302, {
+            Location:
+              "/admin/offres?flash=" +
+              (ok ? "success:" + encodeURIComponent("Offre supprimée.") : "error:" + encodeURIComponent("Offre introuvable.")),
+          });
+          res.end();
+          return;
+        }
       }
     }
 
