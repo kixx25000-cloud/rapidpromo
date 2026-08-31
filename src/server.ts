@@ -100,6 +100,29 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    // Fichiers de l'application web installable (PWA) : manifest, service
+    // worker, icônes. Servis tels quels depuis /public.
+    if (method === "GET" && path === "/manifest.webmanifest") {
+      const manifest = await readFile(join(publicDir, "manifest.webmanifest"), "utf-8");
+      send(res, 200, manifest, "application/manifest+json; charset=utf-8");
+      return;
+    }
+    if (method === "GET" && path === "/sw.js") {
+      const sw = await readFile(join(publicDir, "sw.js"), "utf-8");
+      send(res, 200, sw, "application/javascript; charset=utf-8");
+      return;
+    }
+    if (method === "GET" && path.startsWith("/icons/") && !path.includes("..")) {
+      try {
+        const png = await readFile(join(publicDir, path));
+        res.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "public, max-age=604800" });
+        res.end(png);
+      } catch {
+        notFound(res);
+      }
+      return;
+    }
+
     // Cron externe (production) : GET /api/cron/import?token=...
     if (method === "GET" && path === "/api/cron/import") {
       if (url.searchParams.get("token") !== env.cronToken) {
