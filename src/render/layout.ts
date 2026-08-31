@@ -5,15 +5,15 @@ const SITE_URL = "https://rapidpromo.onrender.com";
 const DEFAULT_DESCRIPTION =
   "RapidPromo compare les meilleures promotions du moment et vous redirige vers le prix le plus bas.";
 
-export function layout(opts: {
+export async function layout(opts: {
   title: string;
   description?: string;
   activeCategorySlug?: string;
   path?: string;
   image?: string;
   body: string;
-}): string {
-  const categories = getCategories();
+}): Promise<string> {
+  const categories = await getCategories();
   const description = opts.description ?? DEFAULT_DESCRIPTION;
   const canonical = SITE_URL + (opts.path ?? "/");
   const image = opts.image ?? `${SITE_URL}/icons/icon-192.png`;
