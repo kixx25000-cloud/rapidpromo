@@ -7,6 +7,7 @@ import { randomBytes } from "node:crypto";
 
 import { homePage, categoryPage, productPage, searchPage } from "./render/public.js";
 import { mentionsLegalesPage, cguPage, confidentialitePage } from "./render/legal.js";
+import { guidesIndexPage, guideArticlePage, getGuideSlugs } from "./render/blog.js";
 import { adminDashboardPage, adminNewOfferPage, adminLoginPage } from "./render/admin.js";
 import { getAllActiveProductIds, getCategories, getOfferWithContext, insertManualOffer, logClick } from "./repo.js";
 import { hashIp } from "./util.js";
@@ -140,8 +141,10 @@ const server = createServer(async (req, res) => {
       const productIds = await getAllActiveProductIds();
       const urls = [
         `${SITE_URL}/`,
+        `${SITE_URL}/guides`,
         ...categories.map((c) => `${SITE_URL}/categorie/${c.slug}`),
         ...productIds.map((id) => `${SITE_URL}/produit/${id}`),
+        ...getGuideSlugs().map((slug) => `${SITE_URL}/guides/${slug}`),
       ];
       const body =
         `<?xml version="1.0" encoding="UTF-8"?>\n` +
@@ -198,6 +201,19 @@ const server = createServer(async (req, res) => {
       await logClick(offerId, hashIp(getClientIp(req)));
       res.writeHead(302, { Location: offer.affiliateUrl });
       res.end();
+      return;
+    }
+
+    if (method === "GET" && path === "/guides") {
+      send(res, 200, await guidesIndexPage());
+      return;
+    }
+
+    if (method === "GET" && path.startsWith("/guides/")) {
+      const slug = path.slice("/guides/".length);
+      const html = await guideArticlePage(slug);
+      if (!html) return notFound(res);
+      send(res, 200, html);
       return;
     }
 
