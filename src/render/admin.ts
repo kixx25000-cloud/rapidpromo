@@ -83,6 +83,10 @@ export function adminNewOfferPage(flash?: { type: "success" | "error"; message: 
         <label>Nom du marchand
           <input type="text" name="merchantName" required placeholder="ex. TechStore" />
         </label>
+        <label>URL de la photo du produit (optionnel)
+          <input type="url" name="productImage" placeholder="https://... (copiée depuis la fiche du marchand)" />
+        </label>
+        <p style="color:#6b7280; font-size:0.85em; margin-top:-14px;">Laissez vide pour garder un pictogramme neutre. Ne mettez que l'URL d'une vraie photo du produit, fournie par le marchand — jamais une image générique.</p>
         <label>Prix promo (€)
           <input type="number" name="price" step="0.01" min="0" required />
         </label>
