@@ -11,9 +11,9 @@ import {
 } from "../repo.js";
 import { daysRemaining, escapeHtml, formatDate, formatPrice } from "../util.js";
 
-export function homePage(): string {
-  const deals = getHomeDeals(12);
-  const categories = getCategories();
+export async function homePage(): Promise<string> {
+  const deals = await getHomeDeals(12);
+  const categories = await getCategories();
 
   const tabs = categories
     .map((c) => `<a href="/categorie/${c.slug}">${escapeHtml(c.name)}</a>`)
@@ -34,12 +34,12 @@ export function homePage(): string {
   });
 }
 
-export function categoryPage(slug: string, sort: "discount" | "price"): string | null {
-  const category = getCategoryBySlug(slug);
+export async function categoryPage(slug: string, sort: "discount" | "price"): Promise<string | null> {
+  const category = await getCategoryBySlug(slug);
   if (!category) return null;
 
-  const categories = getCategories();
-  const deals = getDealsByCategory(category.id, sort);
+  const categories = await getCategories();
+  const deals = await getDealsByCategory(category.id, sort);
 
   const tabs = categories
     .map(
@@ -67,8 +67,8 @@ export function categoryPage(slug: string, sort: "discount" | "price"): string |
   });
 }
 
-export function searchPage(query: string): string {
-  const deals = query.trim() ? searchDeals(query.trim()) : [];
+export async function searchPage(query: string): Promise<string> {
+  const deals = query.trim() ? await searchDeals(query.trim()) : [];
   return layout({
     title: query ? `Résultats pour "${query}"` : "Recherche",
     body: `
@@ -81,10 +81,10 @@ export function searchPage(query: string): string {
   });
 }
 
-export function productPage(id: number): string | null {
-  const product = getProductById(id);
+export async function productPage(id: number): Promise<string | null> {
+  const product = await getProductById(id);
   if (!product) return null;
-  const offers = getActiveOffersForProduct(id);
+  const offers = await getActiveOffersForProduct(id);
   if (offers.length === 0) return null;
 
   const best = offers[0];
