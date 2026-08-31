@@ -164,10 +164,24 @@ function jitter(base: number, seedExtra: string): number {
   return pseudoRandom;
 }
 
+// Désactivé sur le site en ligne (1er septembre 2026) : maintenant que de
+// vraies offres existent, mélanger des produits fictifs (liens vers
+// "exemple-marchand.invalid", qui ne mène nulle part) avec les vraies offres
+// créait une mauvaise expérience pour les visiteurs réels — produits qui ne
+// mènent à aucun marchand, et vraies offres noyées dans les fictives. Passer
+// ce drapeau à true réactive le connecteur (utile en local pour tester le
+// site avant d'avoir de vrais flux) ; laissé à false, fetchOffers() renvoie
+// un tableau vide, ce qui fait automatiquement expirer toutes les offres
+// "Démo" déjà en base au prochain import, sans toucher aux offres réelles
+// (réseau "Ajout manuel" ou un futur connecteur réel).
+const DEMO_ENABLED = false;
+
 export const demoConnector: Connector = {
   networkName: "Démo",
 
   async fetchOffers(): Promise<RawOffer[]> {
+    if (!DEMO_ENABLED) return [];
+
     const offers: RawOffer[] = [];
 
     for (const product of MASTER_PRODUCTS) {
