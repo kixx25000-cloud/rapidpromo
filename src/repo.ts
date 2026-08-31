@@ -1,103 +1,98 @@
 // Couche d'accès aux données : toutes les requêtes SQL de l'application
 // passent par ici, pour garder le reste du code lisible.
+//
+// Base Postgres (via le pool de connexions défini dans db.ts) : toutes les
+// fonctions sont asynchrones (await pool.query(...)), et les alias de
+// colonnes en camelCase (ex. "bestPrice") sont entre guillemets doubles —
+// sans ça, Postgres les renverrait tout en minuscules et casserait le code
+// qui lit ces propriétés.
 
-import { db } from "./db.js";
+import { pool } from "./db.js";
 import { nowIso, placeholderImage } from "./util.js";
 import type { Category, Merchant, Offer, Product, RawOffer } from "./types.js";
 
 // ---------- Catégories ----------
 
-export function getCategories(): Category[] {
-  return db.prepare(`SELECT * FROM categories ORDER BY name`).all() as unknown as Category[];
+export async function getCategories(): Promise<Category[]> {
+  const { rows } = await pool.query(`SELECT * FROM categories ORDER BY name`);
+  return rows as Category[];
 }
 
-export function getCategoryBySlug(slug: string): Category | undefined {
-  return db.prepare(`SELECT * FROM categories WHERE slug = ?`).get(slug) as
-    | Category
-    | undefined;
+export async function getCategoryBySlug(slug: string): Promise<Category | undefined> {
+  const { rows } = await pool.query(`SELECT * FROM categories WHERE slug = $1`, [slug]);
+  return rows[0] as Category | undefined;
 }
 
-export function getCategoryById(id: number): Category | undefined {
-  return db.prepare(`SELECT * FROM categories WHERE id = ?`).get(id) as Category | undefined;
+export async function getCategoryById(id: number): Promise<Category | undefined> {
+  const { rows } = await pool.query(`SELECT * FROM categories WHERE id = $1`, [id]);
+  return rows[0] as Category | undefined;
 }
 
 // ---------- Marchands ----------
 
-export function getMerchants(): Merchant[] {
-  return db.prepare(`SELECT * FROM merchants ORDER BY name`).all() as unknown as Merchant[];
+export async function getMerchants(): Promise<Merchant[]> {
+  const { rows } = await pool.query(`SELECT * FROM merchants ORDER BY name`);
+  return rows as Merchant[];
 }
 
-function upsertMerchant(name: string, network: string): number {
-  db.prepare(
-    `INSERT INTO merchants (name, network) VALUES (?, ?)
-     ON CONFLICT(name) DO UPDATE SET network = excluded.network`
-  ).run(name, network);
-  const row = db.prepare(`SELECT id FROM merchants WHERE name = ?`).get(name) as { id: number };
-  return row.id;
+async function upsertMerchant(name: string, network: string): Promise<number> {
+  const { rows } = await pool.query(
+    `INSERT INTO merchants (name, network) VALUES ($1, $2)
+     ON CONFLICT (name) DO UPDATE SET network = excluded.network
+     RETURNING id`,
+    [name, network]
+  );
+  return rows[0].id as number;
 }
 
 // ---------- Produits & offres (import) ----------
 
-function upsertProduct(raw: RawOffer): number {
-  const category = getCategoryBySlug(raw.categorySlug);
+async function upsertProduct(raw: RawOffer): Promise<number> {
+  const category = await getCategoryBySlug(raw.categorySlug);
   if (!category) throw new Error(`Catégorie inconnue : ${raw.categorySlug}`);
 
-  db.prepare(
+  const { rows } = await pool.query(
     `INSERT INTO products (external_id, title, description, image, category_id)
-     VALUES (?, ?, ?, ?, ?)
-     ON CONFLICT(external_id) DO UPDATE SET
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (external_id) DO UPDATE SET
        title = excluded.title,
        description = excluded.description,
        image = excluded.image,
-       category_id = excluded.category_id`
-  ).run(raw.productExternalId, raw.productTitle, raw.productDescription, raw.productImage, category.id);
-
-  const row = db
-    .prepare(`SELECT id FROM products WHERE external_id = ?`)
-    .get(raw.productExternalId) as { id: number };
-  return row.id;
+       category_id = excluded.category_id
+     RETURNING id`,
+    [raw.productExternalId, raw.productTitle, raw.productDescription, raw.productImage, category.id]
+  );
+  return rows[0].id as number;
 }
 
 /**
  * Insère ou met à jour une offre issue d'un connecteur de flux.
  * Retourne l'id de l'offre affectée.
  */
-export function upsertOfferFromFeed(raw: RawOffer, networkName: string): number {
-  const productId = upsertProduct(raw);
-  const merchantId = upsertMerchant(raw.merchantName, networkName);
+export async function upsertOfferFromFeed(raw: RawOffer, networkName: string): Promise<number> {
+  const productId = await upsertProduct(raw);
+  const merchantId = await upsertMerchant(raw.merchantName, networkName);
   const now = nowIso();
   const discountPct = raw.oldPrice && raw.oldPrice > raw.price
     ? Math.round((1 - raw.price / raw.oldPrice) * 100)
     : null;
 
-  db.prepare(
+  const { rows } = await pool.query(
     `INSERT INTO offers
        (product_id, merchant_id, price, old_price, discount_pct, affiliate_url, starts_at, ends_at, active, last_seen_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
-     ON CONFLICT(product_id, merchant_id) DO UPDATE SET
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 1, $9)
+     ON CONFLICT (product_id, merchant_id) DO UPDATE SET
        price = excluded.price,
        old_price = excluded.old_price,
        discount_pct = excluded.discount_pct,
        affiliate_url = excluded.affiliate_url,
        ends_at = excluded.ends_at,
        active = 1,
-       last_seen_at = excluded.last_seen_at`
-  ).run(
-    productId,
-    merchantId,
-    raw.price,
-    raw.oldPrice ?? null,
-    discountPct,
-    raw.affiliateUrl,
-    now,
-    raw.endsAt,
-    now
+       last_seen_at = excluded.last_seen_at
+     RETURNING id`,
+    [productId, merchantId, raw.price, raw.oldPrice ?? null, discountPct, raw.affiliateUrl, now, raw.endsAt, now]
   );
-
-  const row = db
-    .prepare(`SELECT id FROM offers WHERE product_id = ? AND merchant_id = ?`)
-    .get(productId, merchantId) as { id: number };
-  return row.id;
+  return rows[0].id as number;
 }
 
 /**
@@ -106,21 +101,21 @@ export function upsertOfferFromFeed(raw: RawOffer, networkName: string): number 
  * ainsi que celles dont la date de fin est dépassée, tous réseaux confondus.
  * Retourne le nombre d'offres désactivées.
  */
-export function expireStaleOffers(networkName: string, seenBeforeIso: string): number {
-  const staleFromFeed = db
-    .prepare(
-      `UPDATE offers SET active = 0
-       WHERE active = 1
-         AND last_seen_at < ?
-         AND merchant_id IN (SELECT id FROM merchants WHERE network = ?)`
-    )
-    .run(seenBeforeIso, networkName);
+export async function expireStaleOffers(networkName: string, seenBeforeIso: string): Promise<number> {
+  const staleFromFeed = await pool.query(
+    `UPDATE offers SET active = 0
+     WHERE active = 1
+       AND last_seen_at < $1
+       AND merchant_id IN (SELECT id FROM merchants WHERE network = $2)`,
+    [seenBeforeIso, networkName]
+  );
 
-  const pastDeadline = db
-    .prepare(`UPDATE offers SET active = 0 WHERE active = 1 AND ends_at < ?`)
-    .run(nowIso());
+  const pastDeadline = await pool.query(
+    `UPDATE offers SET active = 0 WHERE active = 1 AND ends_at < $1`,
+    [nowIso()]
+  );
 
-  return Number(staleFromFeed.changes) + Number(pastDeadline.changes);
+  return (staleFromFeed.rowCount ?? 0) + (pastDeadline.rowCount ?? 0);
 }
 
 // ---------- Lecture publique ----------
@@ -142,13 +137,13 @@ interface ProductWithBestPrice extends Product {
 
 const PRODUCT_BEST_PRICE_SELECT = `
   SELECT
-    p.id, p.external_id AS externalId, p.title, p.description, p.image,
-    p.category_id AS categoryId, c.slug AS categorySlug, c.name AS categoryName,
-    MIN(o.price) AS bestPrice,
-    MAX(o.old_price) AS bestOldPrice,
-    MAX(o.discount_pct) AS bestDiscountPct,
-    COUNT(o.id) AS offerCount,
-    MAX(o.ends_at) AS endsAt
+    p.id, p.external_id AS "externalId", p.title, p.description, p.image,
+    p.category_id AS "categoryId", c.slug AS "categorySlug", c.name AS "categoryName",
+    MIN(o.price) AS "bestPrice",
+    MAX(o.old_price) AS "bestOldPrice",
+    MAX(o.discount_pct) AS "bestDiscountPct",
+    COUNT(o.id)::int AS "offerCount",
+    MAX(o.ends_at) AS "endsAt"
   FROM products p
   JOIN offers o ON o.product_id = p.id AND o.active = 1
   JOIN categories c ON c.id = p.category_id
@@ -156,62 +151,59 @@ const PRODUCT_BEST_PRICE_SELECT = `
 
 // Liste tous les produits actuellement en promo active, pour générer le
 // plan du site (sitemap.xml) consulté par les moteurs de recherche.
-export function getAllActiveProductIds(): number[] {
-  const rows = db
-    .prepare(
-      `SELECT DISTINCT p.id AS id FROM products p
-       JOIN offers o ON o.product_id = p.id AND o.active = 1`
-    )
-    .all() as unknown as { id: number }[];
-  return rows.map((r) => r.id);
+export async function getAllActiveProductIds(): Promise<number[]> {
+  const { rows } = await pool.query(
+    `SELECT DISTINCT p.id AS id FROM products p
+     JOIN offers o ON o.product_id = p.id AND o.active = 1`
+  );
+  return (rows as { id: number }[]).map((r) => r.id);
 }
 
-export function getHomeDeals(limit = 12): ProductWithBestPrice[] {
-  return db
-    .prepare(
-      `${PRODUCT_BEST_PRICE_SELECT}
-       GROUP BY p.id
-       ORDER BY bestDiscountPct DESC NULLS LAST, bestPrice ASC
-       LIMIT ?`
-    )
-    .all(limit) as unknown as ProductWithBestPrice[];
+export async function getHomeDeals(limit = 12): Promise<ProductWithBestPrice[]> {
+  const { rows } = await pool.query(
+    `${PRODUCT_BEST_PRICE_SELECT}
+     GROUP BY p.id, c.slug, c.name
+     ORDER BY "bestDiscountPct" DESC NULLS LAST, "bestPrice" ASC
+     LIMIT $1`,
+    [limit]
+  );
+  return rows as ProductWithBestPrice[];
 }
 
-export function getDealsByCategory(
+export async function getDealsByCategory(
   categoryId: number,
   sort: "discount" | "price" = "discount",
   limit = 60
-): ProductWithBestPrice[] {
+): Promise<ProductWithBestPrice[]> {
   const orderBy =
-    sort === "price" ? "bestPrice ASC" : "bestDiscountPct DESC NULLS LAST, bestPrice ASC";
-  return db
-    .prepare(
-      `${PRODUCT_BEST_PRICE_SELECT}
-       WHERE p.category_id = ?
-       GROUP BY p.id
-       ORDER BY ${orderBy}
-       LIMIT ?`
-    )
-    .all(categoryId, limit) as unknown as ProductWithBestPrice[];
+    sort === "price" ? `"bestPrice" ASC` : `"bestDiscountPct" DESC NULLS LAST, "bestPrice" ASC`;
+  const { rows } = await pool.query(
+    `${PRODUCT_BEST_PRICE_SELECT}
+     WHERE p.category_id = $1
+     GROUP BY p.id, c.slug, c.name
+     ORDER BY ${orderBy}
+     LIMIT $2`,
+    [categoryId, limit]
+  );
+  return rows as ProductWithBestPrice[];
 }
 
-export function searchDeals(query: string, limit = 60): ProductWithBestPrice[] {
+export async function searchDeals(query: string, limit = 60): Promise<ProductWithBestPrice[]> {
   const like = `%${query}%`;
-  return db
-    .prepare(
-      `${PRODUCT_BEST_PRICE_SELECT}
-       WHERE p.title LIKE ? OR p.description LIKE ?
-       GROUP BY p.id
-       ORDER BY bestDiscountPct DESC NULLS LAST, bestPrice ASC
-       LIMIT ?`
-    )
-    .all(like, like, limit) as unknown as ProductWithBestPrice[];
+  const { rows } = await pool.query(
+    `${PRODUCT_BEST_PRICE_SELECT}
+     WHERE p.title ILIKE $1 OR p.description ILIKE $2
+     GROUP BY p.id, c.slug, c.name
+     ORDER BY "bestDiscountPct" DESC NULLS LAST, "bestPrice" ASC
+     LIMIT $3`,
+    [like, like, limit]
+  );
+  return rows as ProductWithBestPrice[];
 }
 
-export function getProductById(id: number): Product | undefined {
-  const row = db.prepare(`SELECT * FROM products WHERE id = ?`).get(id) as
-    | (Product & { external_id: string; category_id: number })
-    | undefined;
+export async function getProductById(id: number): Promise<Product | undefined> {
+  const { rows } = await pool.query(`SELECT * FROM products WHERE id = $1`, [id]);
+  const row = rows[0] as (Product & { external_id: string; category_id: number }) | undefined;
   if (!row) return undefined;
   return {
     id: row.id,
@@ -223,48 +215,47 @@ export function getProductById(id: number): Product | undefined {
   };
 }
 
-export function getActiveOffersForProduct(productId: number): OfferRow[] {
-  return db
-    .prepare(
-      `SELECT o.id, o.product_id AS productId, o.merchant_id AS merchantId, o.price,
-              o.old_price AS oldPrice, o.discount_pct AS discountPct,
-              o.affiliate_url AS affiliateUrl, o.starts_at AS startsAt, o.ends_at AS endsAt,
-              o.active, o.last_seen_at AS lastSeenAt,
-              m.name AS merchantName, m.network AS merchantNetwork
-       FROM offers o
-       JOIN merchants m ON m.id = o.merchant_id
-       WHERE o.product_id = ? AND o.active = 1
-       ORDER BY o.price ASC`
-    )
-    .all(productId) as unknown as OfferRow[];
+export async function getActiveOffersForProduct(productId: number): Promise<OfferRow[]> {
+  const { rows } = await pool.query(
+    `SELECT o.id, o.product_id AS "productId", o.merchant_id AS "merchantId", o.price,
+            o.old_price AS "oldPrice", o.discount_pct AS "discountPct",
+            o.affiliate_url AS "affiliateUrl", o.starts_at AS "startsAt", o.ends_at AS "endsAt",
+            o.active, o.last_seen_at AS "lastSeenAt",
+            m.name AS "merchantName", m.network AS "merchantNetwork"
+     FROM offers o
+     JOIN merchants m ON m.id = o.merchant_id
+     WHERE o.product_id = $1 AND o.active = 1
+     ORDER BY o.price ASC`,
+    [productId]
+  );
+  return rows as OfferRow[];
 }
 
-export function getOfferWithContext(offerId: number) {
-  return db
-    .prepare(
-      `SELECT o.id, o.affiliate_url AS affiliateUrl, o.active,
-              p.title AS productTitle, m.name AS merchantName
-       FROM offers o
-       JOIN products p ON p.id = o.product_id
-       JOIN merchants m ON m.id = o.merchant_id
-       WHERE o.id = ?`
-    )
-    .get(offerId) as
+export async function getOfferWithContext(offerId: number) {
+  const { rows } = await pool.query(
+    `SELECT o.id, o.affiliate_url AS "affiliateUrl", o.active,
+            p.title AS "productTitle", m.name AS "merchantName"
+     FROM offers o
+     JOIN products p ON p.id = o.product_id
+     JOIN merchants m ON m.id = o.merchant_id
+     WHERE o.id = $1`,
+    [offerId]
+  );
+  return rows[0] as
     | { id: number; affiliateUrl: string; active: number; productTitle: string; merchantName: string }
     | undefined;
 }
 
-export function logClick(offerId: number, ipHash: string): void {
-  db.prepare(`INSERT INTO click_logs (offer_id, clicked_at, ip_hash) VALUES (?, ?, ?)`).run(
-    offerId,
-    nowIso(),
-    ipHash
+export async function logClick(offerId: number, ipHash: string): Promise<void> {
+  await pool.query(
+    `INSERT INTO click_logs (offer_id, clicked_at, ip_hash) VALUES ($1, $2, $3)`,
+    [offerId, nowIso(), ipHash]
   );
 }
 
 // ---------- Admin ----------
 
-export function insertManualOffer(input: {
+export async function insertManualOffer(input: {
   categorySlug: string;
   productTitle: string;
   productDescription: string;
@@ -277,7 +268,7 @@ export function insertManualOffer(input: {
   // marchand, dans le cadre d'un vrai partenariat d'affiliation). Si absente,
   // on retombe sur le pictogramme placeholder — jamais une fausse photo.
   productImage?: string;
-}): number {
+}): Promise<number> {
   return upsertOfferFromFeed(
     {
       productExternalId: `manuel-${Date.now()}`,
@@ -295,47 +286,47 @@ export function insertManualOffer(input: {
   );
 }
 
-export function startImportRun(network: string): number {
-  const res = db
-    .prepare(`INSERT INTO import_runs (network, started_at, status) VALUES (?, ?, 'ok')`)
-    .run(network, nowIso());
-  return Number(res.lastInsertRowid);
+export async function startImportRun(network: string): Promise<number> {
+  const { rows } = await pool.query(
+    `INSERT INTO import_runs (network, started_at, status) VALUES ($1, $2, 'ok') RETURNING id`,
+    [network, nowIso()]
+  );
+  return rows[0].id as number;
 }
 
-export function finishImportRun(
+export async function finishImportRun(
   id: number,
   importedCount: number,
   expiredCount: number,
   status: "ok" | "erreur",
   message: string | null
-): void {
-  db.prepare(
-    `UPDATE import_runs SET finished_at = ?, imported_count = ?, expired_count = ?, status = ?, message = ?
-     WHERE id = ?`
-  ).run(nowIso(), importedCount, expiredCount, status, message, id);
+): Promise<void> {
+  await pool.query(
+    `UPDATE import_runs SET finished_at = $1, imported_count = $2, expired_count = $3, status = $4, message = $5
+     WHERE id = $6`,
+    [nowIso(), importedCount, expiredCount, status, message, id]
+  );
 }
 
-export function getRecentImportRuns(limit = 20) {
-  return db
-    .prepare(
-      `SELECT id, network, started_at AS startedAt, finished_at AS finishedAt,
-              imported_count AS importedCount, expired_count AS expiredCount, status, message
-       FROM import_runs ORDER BY id DESC LIMIT ?`
-    )
-    .all(limit);
+export async function getRecentImportRuns(limit = 20) {
+  const { rows } = await pool.query(
+    `SELECT id, network, started_at AS "startedAt", finished_at AS "finishedAt",
+            imported_count AS "importedCount", expired_count AS "expiredCount", status, message
+     FROM import_runs ORDER BY id DESC LIMIT $1`,
+    [limit]
+  );
+  return rows;
 }
 
-export function getStats() {
-  const activeOffers = db.prepare(`SELECT COUNT(*) AS n FROM offers WHERE active = 1`).get() as {
-    n: number;
-  };
-  const totalProducts = db.prepare(`SELECT COUNT(*) AS n FROM products`).get() as { n: number };
-  const totalMerchants = db.prepare(`SELECT COUNT(*) AS n FROM merchants`).get() as { n: number };
-  const totalClicks = db.prepare(`SELECT COUNT(*) AS n FROM click_logs`).get() as { n: number };
+export async function getStats() {
+  const activeOffers = await pool.query(`SELECT COUNT(*)::int AS n FROM offers WHERE active = 1`);
+  const totalProducts = await pool.query(`SELECT COUNT(*)::int AS n FROM products`);
+  const totalMerchants = await pool.query(`SELECT COUNT(*)::int AS n FROM merchants`);
+  const totalClicks = await pool.query(`SELECT COUNT(*)::int AS n FROM click_logs`);
   return {
-    activeOffers: activeOffers.n,
-    totalProducts: totalProducts.n,
-    totalMerchants: totalMerchants.n,
-    totalClicks: totalClicks.n,
+    activeOffers: activeOffers.rows[0].n as number,
+    totalProducts: totalProducts.rows[0].n as number,
+    totalMerchants: totalMerchants.rows[0].n as number,
+    totalClicks: totalClicks.rows[0].n as number,
   };
 }
