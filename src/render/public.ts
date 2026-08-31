@@ -30,6 +30,13 @@ export async function homePage(): Promise<string> {
       <div class="category-tabs">${tabs}</div>
       <h2 class="section-title">🔥 Meilleures réductions du moment</h2>
       ${dealGrid(deals)}
+
+      <section style="margin-top:48px; padding-top:24px; border-top:1px solid #e5e7eb; color:#4b5563;">
+        <h2 class="section-title">RapidPromo, le comparateur de promotions en ligne</h2>
+        <p>RapidPromo est un site 100% gratuit qui compare en continu les promotions <strong>high-tech</strong>, <strong>maison &amp; électroménager</strong> et <strong>mode &amp; beauté</strong> chez plusieurs marchands partenaires, pour vous faire gagner du temps et de l'argent. Plutôt que de comparer les prix vous-même produit par produit, RapidPromo le fait pour vous et met en avant le prix le plus bas du moment.</p>
+        <p>Chaque fiche produit RapidPromo affiche un comparatif clair des offres actives : prix, réduction, marchand et date de fin de la promotion. Un clic vous redirige directement vers le site du marchand pour finaliser votre achat, en toute sécurité — RapidPromo ne vend rien lui-même et ne gère ni paiement ni livraison.</p>
+        <p>Vous cherchez des conseils pour mieux acheter en promotion ? Consultez nos <a href="/guides">guides RapidPromo</a>, ou utilisez la recherche en haut de page pour retrouver rapidement un produit.</p>
+      </section>
     `,
   });
 }
