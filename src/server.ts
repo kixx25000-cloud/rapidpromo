@@ -11,6 +11,7 @@ import { adminDashboardPage, adminNewOfferPage, adminLoginPage } from "./render/
 import { getOfferWithContext, insertManualOffer, logClick } from "./repo.js";
 import { hashIp } from "./util.js";
 import { runImport } from "./importer.js";
+import { ICONS } from "./icons-data.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, "..", "public");
@@ -112,14 +113,12 @@ const server = createServer(async (req, res) => {
       send(res, 200, sw, "application/javascript; charset=utf-8");
       return;
     }
-    if (method === "GET" && path.startsWith("/icons/") && !path.includes("..")) {
-      try {
-        const png = await readFile(join(publicDir, path));
-        res.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "public, max-age=604800" });
-        res.end(png);
-      } catch {
-        notFound(res);
-      }
+    if (method === "GET" && path.startsWith("/icons/")) {
+      const name = path.slice("/icons/".length);
+      const b64 = ICONS[name];
+      if (!b64) return notFound(res);
+      res.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "public, max-age=604800" });
+      res.end(Buffer.from(b64, "base64"));
       return;
     }
 
