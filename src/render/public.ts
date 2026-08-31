@@ -21,6 +21,7 @@ export function homePage(): string {
 
   return layout({
     title: "Les meilleures promotions du moment",
+    path: "/",
     body: `
       <div class="hero">
         <h1>Les meilleures promos, comparées pour vous</h1>
@@ -50,6 +51,7 @@ export function categoryPage(slug: string, sort: "discount" | "price"): string |
   return layout({
     title: category.name,
     activeCategorySlug: slug,
+    path: `/categorie/${slug}`,
     body: `
       <div class="hero">
         <h1>${escapeHtml(category.name)}</h1>
@@ -100,10 +102,31 @@ export function productPage(id: number): string | null {
     )
     .join("\n");
 
+  // Données structurées (schema.org) : aident Google à comprendre qu'il
+  // s'agit d'un produit avec un prix, pour un meilleur référencement et de
+  // possibles "rich snippets" (étoiles, prix) dans les résultats de recherche.
+  const jsonLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.title,
+    description: product.description,
+    image: product.image,
+    offers: {
+      "@type": "AggregateOffer",
+      priceCurrency: "EUR",
+      lowPrice: best.price,
+      offerCount: offers.length,
+      availability: "https://schema.org/InStock",
+    },
+  });
+
   return layout({
     title: product.title,
     description: product.description,
+    path: `/produit/${id}`,
+    image: product.image,
     body: `
+      <script type="application/ld+json">${jsonLd}</script>
       <div class="product-detail">
         <div>
           <img src="${product.image}" alt="${escapeHtml(product.title)}" />
