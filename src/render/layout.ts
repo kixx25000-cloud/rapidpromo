@@ -23,6 +23,24 @@ export function layout(opts: {
   <title>${escapeHtml(opts.title)} — RapidPromo</title>
   <meta name="description" content="${escapeHtml(opts.description ?? "RapidPromo compare les meilleures promotions du moment et vous redirige vers le prix le plus bas.")}" />
   <link rel="stylesheet" href="/style.css" />
+
+  <!-- Application web installable (PWA) : permet d'ajouter RapidPromo sur
+       l'écran d'accueil du téléphone (iPhone et Android), comme une appli. -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#ea580c" />
+  <link rel="icon" href="/icons/icon-32.png" sizes="32x32" type="image/png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="RapidPromo" />
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("/sw.js").catch(function () {});
+      });
+    }
+  </script>
 </head>
 <body>
   <header class="site-header">
