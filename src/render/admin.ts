@@ -2,7 +2,7 @@ import { layout, flashHtml } from "./layout.js";
 import { getCategories, getRecentImportRuns, getStats } from "../repo.js";
 import { escapeHtml, formatDate } from "../util.js";
 
-export function adminLoginPage(flash?: { type: "success" | "error"; message: string }, next?: string): string {
+export async function adminLoginPage(flash?: { type: "success" | "error"; message: string }, next?: string): Promise<string> {
   return layout({
     title: "Connexion — Espace pro",
     body: `
@@ -24,9 +24,9 @@ export function adminLoginPage(flash?: { type: "success" | "error"; message: str
   });
 }
 
-export function adminDashboardPage(flash?: { type: "success" | "error"; message: string }): string {
-  const stats = getStats();
-  const runs = getRecentImportRuns(15) as Array<{
+export async function adminDashboardPage(flash?: { type: "success" | "error"; message: string }): Promise<string> {
+  const stats = await getStats();
+  const runs = (await getRecentImportRuns(15)) as Array<{
     id: number;
     network: string;
     startedAt: string;
@@ -80,8 +80,8 @@ export function adminDashboardPage(flash?: { type: "success" | "error"; message:
   });
 }
 
-export function adminNewOfferPage(flash?: { type: "success" | "error"; message: string }): string {
-  const categories = getCategories();
+export async function adminNewOfferPage(flash?: { type: "success" | "error"; message: string }): Promise<string> {
+  const categories = await getCategories();
   const options = categories
     .map((c) => `<option value="${c.slug}">${escapeHtml(c.name)}</option>`)
     .join("");
