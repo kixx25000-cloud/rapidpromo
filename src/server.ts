@@ -8,13 +8,14 @@ import { randomBytes } from "node:crypto";
 import { homePage, categoryPage, productPage, searchPage } from "./render/public.js";
 import { mentionsLegalesPage, cguPage, confidentialitePage } from "./render/legal.js";
 import { adminDashboardPage, adminNewOfferPage, adminLoginPage } from "./render/admin.js";
-import { getOfferWithContext, insertManualOffer, logClick } from "./repo.js";
+import { getAllActiveProductIds, getCategories, getOfferWithContext, insertManualOffer, logClick } from "./repo.js";
 import { hashIp } from "./util.js";
 import { runImport } from "./importer.js";
 import { ICONS } from "./icons-data.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, "..", "public");
+const SITE_URL = "https://rapidpromo.onrender.com";
 
 function send(res: ServerResponse, status: number, body: string, contentType = "text/html; charset=utf-8"): void {
   res.writeHead(status, { "Content-Type": contentType });
@@ -119,6 +120,34 @@ const server = createServer(async (req, res) => {
       if (!b64) return notFound(res);
       res.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "public, max-age=604800" });
       res.end(Buffer.from(b64, "base64"));
+      return;
+    }
+
+    // Référencement (SEO) : robots.txt et sitemap.xml, générés dynamiquement
+    // à partir des catégories et offres actives, pour que Google découvre
+    // et indexe toutes les pages du site.
+    if (method === "GET" && path === "/robots.txt") {
+      const body = ["User-agent: *", "Allow: /", "Disallow: /admin", `Sitemap: ${SITE_URL}/sitemap.xml`].join(
+        "\n"
+      );
+      send(res, 200, body, "text/plain; charset=utf-8");
+      return;
+    }
+
+    if (method === "GET" && path === "/sitemap.xml") {
+      const categories = getCategories();
+      const productIds = getAllActiveProductIds();
+      const urls = [
+        `${SITE_URL}/`,
+        ...categories.map((c) => `${SITE_URL}/categorie/${c.slug}`),
+        ...productIds.map((id) => `${SITE_URL}/produit/${id}`),
+      ];
+      const body =
+        `<?xml version="1.0" encoding="UTF-8"?>\n` +
+        `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+        urls.map((u) => `  <url><loc>${u}</loc></url>`).join("\n") +
+        `\n</urlset>\n`;
+      send(res, 200, body, "application/xml; charset=utf-8");
       return;
     }
 
