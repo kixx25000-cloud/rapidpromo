@@ -2,6 +2,28 @@ import { layout, flashHtml } from "./layout.js";
 import { getCategories, getRecentImportRuns, getStats } from "../repo.js";
 import { escapeHtml, formatDate } from "../util.js";
 
+export function adminLoginPage(flash?: { type: "success" | "error"; message: string }, next?: string): string {
+  return layout({
+    title: "Connexion — Espace pro",
+    body: `
+      <div style="max-width:380px; margin:60px auto;">
+        <h1 style="margin-bottom:24px;">Connexion à l'espace pro</h1>
+        ${flashHtml(flash)}
+        <form class="admin-form" method="post" action="/admin/login">
+          <input type="hidden" name="next" value="${escapeHtml(next ?? "/admin")}" />
+          <label>Identifiant
+            <input type="text" name="username" required autofocus autocomplete="username" />
+          </label>
+          <label>Mot de passe
+            <input type="password" name="password" required autocomplete="current-password" />
+          </label>
+          <button class="btn" type="submit">Se connecter</button>
+        </form>
+      </div>
+    `,
+  });
+}
+
 export function adminDashboardPage(flash?: { type: "success" | "error"; message: string }): string {
   const stats = getStats();
   const runs = getRecentImportRuns(15) as Array<{
