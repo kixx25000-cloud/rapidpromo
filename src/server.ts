@@ -12,6 +12,7 @@ import { getAllActiveProductIds, getCategories, getOfferWithContext, insertManua
 import { hashIp } from "./util.js";
 import { runImport } from "./importer.js";
 import { ICONS } from "./icons-data.js";
+import { initSchema } from "./db.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, "..", "public");
@@ -135,8 +136,8 @@ const server = createServer(async (req, res) => {
     }
 
     if (method === "GET" && path === "/sitemap.xml") {
-      const categories = getCategories();
-      const productIds = getAllActiveProductIds();
+      const categories = await getCategories();
+      const productIds = await getAllActiveProductIds();
       const urls = [
         `${SITE_URL}/`,
         ...categories.map((c) => `${SITE_URL}/categorie/${c.slug}`),
@@ -164,27 +165,27 @@ const server = createServer(async (req, res) => {
 
     // Pages publiques
     if (method === "GET" && path === "/") {
-      send(res, 200, homePage());
+      send(res, 200, await homePage());
       return;
     }
 
     if (method === "GET" && path.startsWith("/categorie/")) {
       const slug = path.slice("/categorie/".length);
       const sort = url.searchParams.get("tri") === "prix" ? "price" : "discount";
-      const html = categoryPage(slug, sort);
+      const html = await categoryPage(slug, sort);
       if (!html) return notFound(res);
       send(res, 200, html);
       return;
     }
 
     if (method === "GET" && path === "/recherche") {
-      send(res, 200, searchPage(url.searchParams.get("q") ?? ""));
+      send(res, 200, await searchPage(url.searchParams.get("q") ?? ""));
       return;
     }
 
     if (method === "GET" && path.startsWith("/produit/")) {
       const id = Number(path.slice("/produit/".length));
-      const html = Number.isFinite(id) ? productPage(id) : null;
+      const html = Number.isFinite(id) ? await productPage(id) : null;
       if (!html) return notFound(res);
       send(res, 200, html);
       return;
@@ -192,30 +193,30 @@ const server = createServer(async (req, res) => {
 
     if (method === "GET" && path.startsWith("/go/")) {
       const offerId = Number(path.slice("/go/".length));
-      const offer = Number.isFinite(offerId) ? getOfferWithContext(offerId) : undefined;
+      const offer = Number.isFinite(offerId) ? await getOfferWithContext(offerId) : undefined;
       if (!offer || !offer.active) return notFound(res);
-      logClick(offerId, hashIp(getClientIp(req)));
+      await logClick(offerId, hashIp(getClientIp(req)));
       res.writeHead(302, { Location: offer.affiliateUrl });
       res.end();
       return;
     }
 
     if (method === "GET" && path === "/mentions-legales") {
-      send(res, 200, mentionsLegalesPage());
+      send(res, 200, await mentionsLegalesPage());
       return;
     }
     if (method === "GET" && path === "/cgu") {
-      send(res, 200, cguPage());
+      send(res, 200, await cguPage());
       return;
     }
     if (method === "GET" && path === "/confidentialite") {
-      send(res, 200, confidentialitePage());
+      send(res, 200, await confidentialitePage());
       return;
     }
 
     // Connexion à l'espace admin (page HTML classique, avec cookie de session)
     if (method === "GET" && path === "/admin/login") {
-      send(res, 200, adminLoginPage(parseFlash(url), url.searchParams.get("next") ?? undefined));
+      send(res, 200, await adminLoginPage(parseFlash(url), url.searchParams.get("next") ?? undefined));
       return;
     }
 
@@ -247,7 +248,7 @@ const server = createServer(async (req, res) => {
       }
 
       if (method === "GET" && path === "/admin") {
-        send(res, 200, adminDashboardPage(parseFlash(url)));
+        send(res, 200, await adminDashboardPage(parseFlash(url)));
         return;
       }
 
@@ -259,14 +260,14 @@ const server = createServer(async (req, res) => {
       }
 
       if (method === "GET" && path === "/admin/offres/nouvelle") {
-        send(res, 200, adminNewOfferPage(parseFlash(url)));
+        send(res, 200, await adminNewOfferPage(parseFlash(url)));
         return;
       }
 
       if (method === "POST" && path === "/admin/offres/nouvelle") {
         const body = await readBody(req);
         try {
-          insertManualOffer({
+          await insertManualOffer({
             categorySlug: String(body.get("categorySlug")),
             productTitle: String(body.get("productTitle")),
             productDescription: String(body.get("productDescription") ?? ""),
@@ -295,6 +296,10 @@ const server = createServer(async (req, res) => {
     send(res, 500, "Erreur interne du serveur.", "text/plain; charset=utf-8");
   }
 });
+
+// Crée les tables (si besoin) avant d'accepter la moindre requête — la base
+// Postgres est distante, donc cette étape est maintenant asynchrone.
+await initSchema();
 
 server.listen(env.port, () => {
   console.log(`✅ RapidPromo tourne sur http://localhost:${env.port}`);
