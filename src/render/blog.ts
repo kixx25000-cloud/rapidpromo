@@ -106,6 +106,51 @@ const ARTICLES: GuideArticle[] = [
       <p>Plutôt que d'acheter au coup par coup, garder une liste de vos produits mode et beauté récurrents permet de profiter des bonnes promotions au bon moment, sans achat impulsif inutile.</p>
     `,
   },
+  {
+    slug: "reperer-fausse-promotion-prix-barre",
+    title: "Prix barré, fausse promo : 5 signes qui doivent vous alerter",
+    description:
+      "Un prix barré n'est pas toujours une vraie réduction. Voici comment repérer une fausse promotion en quelques secondes avant d'acheter.",
+    categorySlug: null,
+    categoryLabel: "À propos",
+    publishedAt: "2026-09-02",
+    bodyHtml: `
+      <p>Depuis 2015, les commerçants en ligne sont encadrés par la réglementation sur les annonces de réduction de prix : le prix "de référence" barré doit correspondre au prix le plus bas réellement pratiqué au cours des 30 derniers jours. Dans les faits, tous les marchands ne jouent pas le jeu de la même façon. Voici les signes qui doivent mettre la puce à l'oreille.</p>
+      <h2>1. Le prix barré ne bouge jamais</h2>
+      <p>Si un produit affiche "-40%" en continu depuis des mois sans que le prix barré change, ce prix de référence a de fortes chances d'être artificiel plutôt qu'un vrai prix pratiqué récemment.</p>
+      <h2>2. La réduction est ronde et spectaculaire</h2>
+      <p>Une remise de "-70%" ou "-80%" sur un produit courant doit interroger : soit c'est un vrai déstockage ponctuel, soit le prix de départ a été gonflé pour rendre la remise plus impressionnante qu'elle ne l'est réellement.</p>
+      <h2>3. Le prix ne correspond à aucun historique cohérent</h2>
+      <p>Comparer le prix affiché avec ce qui est pratiqué chez d'autres marchands pour le même produit reste le réflexe le plus fiable. C'est exactement ce que permet un comparateur comme RapidPromo : voir plusieurs offres actives côte à côte, plutôt que de se fier à un seul site.</p>
+      <h2>4. La promotion est "limitée dans le temps" en permanence</h2>
+      <p>Un compte à rebours qui se relance sans cesse, ou une mention "offre valable aujourd'hui seulement" qui revient chaque jour, est une technique classique pour créer un faux sentiment d'urgence.</p>
+      <h2>5. Le vendeur n'est pas identifiable clairement</h2>
+      <p>Sur les marketplaces, vérifiez toujours qui vend réellement le produit (le site lui-même ou un vendeur tiers) : les conditions de retour, de garantie et de service après-vente peuvent différer.</p>
+      <p>Le meilleur réflexe reste simple : comparer avant d'acheter, plutôt que de se fier à un seul badge "promo". C'est la mission de RapidPromo sur les catégories <a href="/categorie/high-tech">high-tech</a>, <a href="/categorie/maison">maison &amp; électroménager</a> et <a href="/categorie/mode">mode &amp; beauté</a>.</p>
+    `,
+  },
+  {
+    slug: "calendrier-meilleures-periodes-soldes-promos",
+    title: "Calendrier des promos 2026 : quand acheter le moins cher selon la catégorie",
+    description:
+      "Soldes, French Days, Black Friday... le calendrier des meilleures périodes pour acheter en promo high-tech, maison et mode & beauté.",
+    categorySlug: null,
+    categoryLabel: "À propos",
+    publishedAt: "2026-09-02",
+    bodyHtml: `
+      <p>Toutes les périodes de promotion ne se valent pas selon ce que vous achetez. Voici un calendrier repère pour savoir quand les prix ont le plus de chances d'être vraiment bas, catégorie par catégorie.</p>
+      <h2>Janvier et juillet : les soldes officielles</h2>
+      <p>Les seules périodes de démarque réglementées par la loi en France. Elles restent particulièrement intéressantes pour la <a href="/categorie/mode">mode &amp; beauté</a>, où les enseignes doivent réellement écouler leurs stocks de saison.</p>
+      <h2>Fin avril / début mai : les French Days</h2>
+      <p>Un bon moment pour le <a href="/categorie/high-tech">high-tech</a> : les marques préparent souvent des baisses ciblées sur les références qui vont être renouvelées dans l'année.</p>
+      <h2>Fin novembre : Black Friday et Cyber Monday</h2>
+      <p>La période la plus intense de l'année tous secteurs confondus, mais aussi celle où les faux prix barrés sont les plus fréquents (voir notre <a href="/guides/reperer-fausse-promotion-prix-barre">guide pour repérer une fausse promotion</a>). Comparer plusieurs marchands y est particulièrement utile.</p>
+      <h2>Septembre-octobre : la rentrée pour l'électroménager</h2>
+      <p>Les nouvelles gammes <a href="/categorie/maison">maison &amp; électroménager</a> arrivent souvent à l'automne, ce qui pousse certains marchands à baisser les prix sur les modèles de l'année précédente.</p>
+      <h2>Le reste de l'année : rester attentif plutôt qu'attendre</h2>
+      <p>En dehors de ces temps forts, de bonnes affaires ponctuelles existent toute l'année (fin de série, déstockage, opération d'un marchand en particulier). Plutôt que d'attendre une date précise, le plus efficace reste de comparer régulièrement les offres actives sur RapidPromo pour ne pas rater une promo isolée.</p>
+    `,
+  },
 ];
 
 export async function guidesIndexPage(): Promise<string> {
@@ -171,4 +216,3 @@ export async function guideArticlePage(slug: string): Promise<string | null> {
 export function getGuideSlugs(): string[] {
   return ARTICLES.map((a) => a.slug);
 }
-
