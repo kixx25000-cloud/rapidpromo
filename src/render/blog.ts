@@ -151,6 +151,48 @@ const ARTICLES: GuideArticle[] = [
       <p>En dehors de ces temps forts, de bonnes affaires ponctuelles existent toute l'année (fin de série, déstockage, opération d'un marchand en particulier). Plutôt que d'attendre une date précise, le plus efficace reste de comparer régulièrement les offres actives sur RapidPromo pour ne pas rater une promo isolée.</p>
     `,
   },
+  {
+    slug: "lien-affilie-comment-ca-marche",
+    title: "Lien affilié RapidPromo : comment ça marche, et est-ce que ça change le prix ?",
+    description:
+      "RapidPromo utilise des liens d'affiliation pour se financer. Explication simple de ce que c'est, et pourquoi ça ne change rien au prix que vous payez.",
+    categorySlug: null,
+    categoryLabel: "À propos",
+    publishedAt: "2026-09-02",
+    bodyHtml: `
+      <p>C'est une question légitime, et la réponse est simple : non, cliquer sur un lien RapidPromo ne coûte rien de plus, et ne change jamais le prix affiché chez le marchand.</p>
+      <h2>Qu'est-ce qu'un lien d'affiliation ?</h2>
+      <p>Quand vous cliquez sur "Profiter de l'offre" sur RapidPromo, vous êtes redirigé vers la page du marchand via un lien spécial qui indique simplement d'où vient la visite. Si vous achetez ensuite, le marchand reverse une petite commission à RapidPromo — un peu comme un vendeur qui vous a orienté vers le bon rayon touche une prime, sans que cela change le prix payé en caisse.</p>
+      <h2>Pourquoi le prix ne change pas</h2>
+      <p>La commission d'affiliation est payée par le marchand sur sa propre marge, dans le cadre d'un programme officiel (Amazon Partenaires, Awin, Tradedoubler...). Elle n'est jamais ajoutée au prix affiché : vous payez exactement le même montant qu'en allant directement sur le site du marchand, voire moins si RapidPromo vous a permis de repérer l'offre la moins chère.</p>
+      <h2>Pourquoi RapidPromo est gratuit pour vous</h2>
+      <p>C'est justement ce modèle qui permet à RapidPromo de comparer les prix sans rien facturer aux visiteurs : le site se rémunère uniquement quand il vous aide réellement à trouver une bonne affaire, jamais autrement.</p>
+      <h2>La transparence, une obligation légale</h2>
+      <p>En France, toute communication commerciale autour d'un lien affilié doit être clairement signalée — c'est une règle que RapidPromo applique scrupuleusement, y compris dans ce guide.</p>
+      <p>Pour en savoir plus sur l'ensemble de la démarche, consultez notre page <a href="/guides/quest-ce-que-rapidpromo">« RapidPromo, c'est quoi ? »</a>.</p>
+    `,
+  },
+  {
+    slug: "rapidpromo-est-il-fiable-transparence",
+    title: "RapidPromo est-il fiable ? Notre engagement de transparence",
+    description:
+      "Comment RapidPromo sélectionne ses offres, d'où viennent les prix affichés, et pourquoi le site n'a aucun intérêt à afficher un faux bon plan.",
+    categorySlug: null,
+    categoryLabel: "À propos",
+    publishedAt: "2026-09-02",
+    bodyHtml: `
+      <p>Un comparateur n'a de valeur que si l'on peut lui faire confiance. Voici, sans détour, comment RapidPromo fonctionne et ce qui garantit son sérieux.</p>
+      <h2>D'où viennent les prix affichés ?</h2>
+      <p>Exclusivement de programmes d'affiliation officiels (Amazon Partenaires, et d'autres réseaux partenaires en cours d'intégration). Aucune donnée n'est scrapée ou inventée : chaque offre correspond à un prix réellement pratiqué par le marchand au moment de la publication.</p>
+      <h2>RapidPromo peut-il "pousser" une offre pour gagner plus ?</h2>
+      <p>Non : le tri des offres sur une fiche produit se fait par prix croissant, de façon automatique. RapidPromo n'a pas intérêt à mettre en avant une offre plus chère, puisque son modèle repose sur la confiance des visiteurs qui reviennent comparer régulièrement.</p>
+      <h2>Que se passe-t-il quand une promo se termine ?</h2>
+      <p>L'offre est automatiquement retirée du site. Une promotion affichée sur RapidPromo est une promotion active au moment où vous la consultez.</p>
+      <h2>Qui se cache derrière RapidPromo ?</h2>
+      <p>Un site indépendant, sans lien capitalistique avec les marchands comparés. RapidPromo ne vend rien lui-même et n'intervient jamais dans la transaction, le paiement ou la livraison — cela reste entièrement entre vous et le marchand choisi.</p>
+      <p>Pour le détail du modèle économique, voir notre guide <a href="/guides/lien-affilie-comment-ca-marche">sur le fonctionnement des liens affiliés</a>.</p>
+    `,
+  },
 ];
 
 export async function guidesIndexPage(): Promise<string> {
