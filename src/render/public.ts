@@ -57,6 +57,7 @@ export async function categoryPage(slug: string, sort: "discount" | "price"): Pr
 
   return layout({
     title: category.name,
+    description: `Comparez les meilleures offres ${category.name.toLowerCase()} du moment sur RapidPromo : prix les plus bas chez plusieurs marchands partenaires, triés par réduction ou par prix.`,
     activeCategorySlug: slug,
     path: `/categorie/${slug}`,
     body: `
@@ -78,6 +79,10 @@ export async function searchPage(query: string): Promise<string> {
   const deals = query.trim() ? await searchDeals(query.trim()) : [];
   return layout({
     title: query ? `Résultats pour "${query}"` : "Recherche",
+    description: query
+      ? `${deals.length} offre${deals.length > 1 ? "s" : ""} trouvée${deals.length > 1 ? "s" : ""} pour "${query}" sur RapidPromo, comparateur de promotions.`
+      : "Recherchez un produit en promotion sur RapidPromo pour comparer les offres actives chez plusieurs marchands.",
+    path: "/recherche",
     body: `
       <div class="hero">
         <h1>${query ? `Résultats pour « ${escapeHtml(query)} »` : "Recherche"}</h1>
