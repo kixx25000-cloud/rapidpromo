@@ -5,6 +5,9 @@ const PLACEHOLDER = (label: string) => `<span class="placeholder">${label}</span
 export async function mentionsLegalesPage(): Promise<string> {
   return layout({
     title: "Mentions légales",
+    description:
+      "Mentions légales de RapidPromo : éditeur du site, hébergeur et fonctionnement du comparateur de promotions en affiliation.",
+    path: "/mentions-legales",
     body: `
       <div class="legal-page">
         <h1>Mentions légales</h1>
@@ -33,6 +36,9 @@ export async function mentionsLegalesPage(): Promise<string> {
 export async function cguPage(): Promise<string> {
   return layout({
     title: "Conditions générales d'utilisation",
+    description:
+      "Conditions générales d'utilisation de RapidPromo : fonctionnement du comparateur, rôle des marchands partenaires et responsabilités.",
+    path: "/cgu",
     body: `
       <div class="legal-page">
         <h1>Conditions générales d'utilisation</h1>
@@ -59,6 +65,9 @@ export async function cguPage(): Promise<string> {
 export async function confidentialitePage(): Promise<string> {
   return layout({
     title: "Confidentialité & cookies",
+    description:
+      "Politique de confidentialité et cookies de RapidPromo : cookies de suivi d'affiliation, données collectées et vos droits RGPD.",
+    path: "/confidentialite",
     body: `
       <div class="legal-page">
         <h1>Confidentialité &amp; cookies</h1>
