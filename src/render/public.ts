@@ -95,7 +95,10 @@ export async function categoryPage(slug: string, sort: "discount" | "price"): Pr
 
   return layout({
     title: category.name,
-    description: `Comparez les meilleures offres ${category.name.toLowerCase()} du moment sur RapidPromo : prix les plus bas chez plusieurs marchands partenaires, triés par réduction ou par prix.`,
+    // Description raccourcie pour rester sous ~155-160 caractères même avec
+    // le nom de catégorie le plus long ("maison & électroménager") — au-delà,
+    // Google tronque souvent la description dans les résultats de recherche.
+    description: `RapidPromo compare les offres ${category.name.toLowerCase()} du moment : prix les plus bas chez plusieurs marchands partenaires, triées par réduction ou par prix.`,
     activeCategorySlug: slug,
     path: `/categorie/${slug}`,
     body: `
