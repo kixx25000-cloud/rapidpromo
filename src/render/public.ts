@@ -55,6 +55,20 @@ export async function categoryPage(slug: string, sort: "discount" | "price"): Pr
     )
     .join("");
 
+  // Maillage interne vers le guide correspondant : les guides pointent déjà
+  // vers les catégories, ce lien complète la boucle dans l'autre sens pour
+  // que les moteurs de recherche découvrent plus facilement le contenu
+  // éditorial depuis les pages catégorie, les plus visitées du site.
+  const guideBySlug: Record<string, { slug: string; label: string }> = {
+    "high-tech": { slug: "bien-choisir-promo-high-tech", label: "nos 6 réflexes pour bien choisir une promo high-tech" },
+    maison: { slug: "electromenager-soldes-sans-se-tromper", label: "nos conseils pour profiter des soldes électroménager sans se tromper" },
+    mode: { slug: "mode-beaute-economiser-sans-sacrifier-qualite", label: "nos astuces mode & beauté pour économiser sans sacrifier la qualité" },
+  };
+  const relatedGuide = guideBySlug[slug];
+  const guideLink = relatedGuide
+    ? `<p style="margin-top:24px; color:#6b7280;">📖 <a href="/guides/${relatedGuide.slug}">Lire ${relatedGuide.label}</a></p>`
+    : "";
+
   return layout({
     title: category.name,
     description: `Comparez les meilleures offres ${category.name.toLowerCase()} du moment sur RapidPromo : prix les plus bas chez plusieurs marchands partenaires, triés par réduction ou par prix.`,
@@ -71,6 +85,7 @@ export async function categoryPage(slug: string, sort: "discount" | "price"): Pr
         <a class="btn small ${sort === "price" ? "" : "secondary"}" href="/categorie/${slug}?tri=prix">Tri : prix le plus bas</a>
       </div>
       ${dealGrid(deals)}
+      ${guideLink}
     `,
   });
 }
