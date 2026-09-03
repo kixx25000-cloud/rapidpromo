@@ -11,6 +11,11 @@ export async function layout(opts: {
   activeCategorySlug?: string;
   path?: string;
   image?: string;
+  // Empêche l'indexation par les moteurs de recherche (espace admin,
+  // connexion...) : robots.txt bloque déjà l'exploration de /admin, mais
+  // une balise noindex est un signal plus fort si une URL admin venait à
+  // être découverte autrement (lien externe, historique du navigateur...).
+  noindex?: boolean;
   body: string;
 }): Promise<string> {
   const categories = await getCategories();
@@ -72,7 +77,7 @@ export async function layout(opts: {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(opts.title)} — RapidPromo</title>
   <meta name="description" content="${escapeHtml(description)}" />
-  <link rel="canonical" href="${canonical}" />
+  ${opts.noindex ? '<meta name="robots" content="noindex" />\n  ' : ""}<link rel="canonical" href="${canonical}" />
   <link rel="stylesheet" href="/style.css" />
   <script type="application/ld+json">${brandJsonLd}</script>
 
