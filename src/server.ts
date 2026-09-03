@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomBytes } from "node:crypto";
+import { gzipSync } from "node:zlib";
 
 import { homePage, categoryPage, productPage, searchPage } from "./render/public.js";
 import { mentionsLegalesPage, cguPage, confidentialitePage } from "./render/legal.js";
@@ -18,9 +19,32 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, "..", "public");
 const SITE_URL = "https://rapidpromo.onrender.com";
 
-function send(res: ServerResponse, status: number, body: string, contentType = "text/html; charset=utf-8"): void {
-  res.writeHead(status, { "Content-Type": contentType });
-  res.end(body);
+// Compression gzip : réduit nettement la taille des réponses HTML/CSS/JSON
+// (souvent divisée par 3 à 5 pour du texte), donc un chargement plus rapide
+// pour le visiteur — un signal utilisé par Google (Core Web Vitals) pour le
+// classement. On ne compresse que si le navigateur l'accepte (en-tête
+// Accept-Encoding) ; "Vary: Accept-Encoding" indique aux caches intermédiaires
+// que la réponse dépend de cet en-tête, pour ne jamais servir une version
+// compressée à un client qui ne la comprend pas.
+function send(
+  req: IncomingMessage,
+  res: ServerResponse,
+  status: number,
+  body: string,
+  contentType = "text/html; charset=utf-8",
+  extraHeaders: Record<string, string> = {}
+): void {
+  const acceptEncoding = req.headers["accept-encoding"];
+  const supportsGzip = typeof acceptEncoding === "string" && acceptEncoding.includes("gzip");
+  const headers: Record<string, string> = { "Content-Type": contentType, Vary: "Accept-Encoding", ...extraHeaders };
+  if (supportsGzip) {
+    headers["Content-Encoding"] = "gzip";
+    res.writeHead(status, headers);
+    res.end(gzipSync(body));
+  } else {
+    res.writeHead(status, headers);
+    res.end(body);
+  }
 }
 
 // Page 404 habillée aux couleurs de RapidPromo plutôt qu'une page nue :
@@ -28,8 +52,9 @@ function send(res: ServerResponse, status: number, body: string, contentType = "
 // internes vers les pages clés pour ne pas perdre le visiteur (et aider les
 // moteurs de recherche à continuer d'explorer le site depuis n'importe quelle
 // URL cassée).
-function notFound(res: ServerResponse): void {
+function notFound(req: IncomingMessage, res: ServerResponse): void {
   send(
+    req,
     res,
     404,
     `<!doctype html>
@@ -152,11 +177,7 @@ const server = createServer(async (req, res) => {
     // utilisé par Google (Core Web Vitals) pour le classement.
     if (method === "GET" && path === "/style.css") {
       const css = await readFile(join(publicDir, "style.css"), "utf-8");
-      res.writeHead(200, {
-        "Content-Type": "text/css; charset=utf-8",
-        "Cache-Control": "public, max-age=3600",
-      });
-      res.end(css);
+      send(req, res, 200, css, "text/css; charset=utf-8", { "Cache-Control": "public, max-age=3600" });
       return;
     }
 
@@ -164,12 +185,20 @@ const server = createServer(async (req, res) => {
     // worker, icônes. Servis tels quels depuis /public.
     if (method === "GET" && path === "/manifest.webmanifest") {
       const manifest = await readFile(join(publicDir, "manifest.webmanifest"), "utf-8");
-      send(res, 200, manifest, "application/manifest+json; charset=utf-8");
+      send(req, res, 200, manifest, "application/manifest+json; charset=utf-8", {
+        "Cache-Control": "public, max-age=86400",
+      });
       return;
     }
     if (method === "GET" && path === "/sw.js") {
       const sw = await readFile(join(publicDir, "sw.js"), "utf-8");
-      send(res, 200, sw, "application/javascript; charset=utf-8");
+      // Le service worker doit toujours être revérifié par le navigateur
+      // (jamais mis en cache longtemps) : sinon une future correction de ce
+      // fichier mettrait beaucoup plus de temps à atteindre les visiteurs
+      // ayant déjà installé la PWA — c'est exactement le problème corrigé
+      // cette nuit dans sw.js lui-même (cache "stale-while-revalidate" côté
+      // fichiers statiques), donc autant l'éviter aussi pour ce fichier.
+      send(req, res, 200, sw, "application/javascript; charset=utf-8", { "Cache-Control": "no-cache" });
       return;
     }
     if (method === "GET" && path.startsWith("/icons/")) {
@@ -178,13 +207,13 @@ const server = createServer(async (req, res) => {
       // traversée de répertoire) : icônes servies directement depuis
       // /public/icons comme de vrais fichiers PNG, plus simple et plus
       // fiable qu'un encodage base64 intégré dans le code source.
-      if (!/^[a-z0-9-]+\.png$/.test(name)) return notFound(res);
+      if (!/^[a-z0-9-]+\.png$/.test(name)) return notFound(req, res);
       try {
         const buf = await readFile(join(publicDir, "icons", name));
         res.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "public, max-age=604800" });
         res.end(buf);
       } catch {
-        notFound(res);
+        notFound(req, res);
       }
       return;
     }
@@ -199,7 +228,7 @@ const server = createServer(async (req, res) => {
         res.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "public, max-age=604800" });
         res.end(buf);
       } catch {
-        notFound(res);
+        notFound(req, res);
       }
       return;
     }
@@ -208,10 +237,18 @@ const server = createServer(async (req, res) => {
     // à partir des catégories et offres actives, pour que Google découvre
     // et indexe toutes les pages du site.
     if (method === "GET" && path === "/robots.txt") {
-      const body = ["User-agent: *", "Allow: /", "Disallow: /admin", `Sitemap: ${SITE_URL}/sitemap.xml`].join(
-        "\n"
-      );
-      send(res, 200, body, "text/plain; charset=utf-8");
+      const body = [
+        "User-agent: *",
+        "Allow: /",
+        "Disallow: /admin",
+        // Les liens /go/xxx ne sont que des redirections immédiates vers le
+        // marchand (déjà en rel="nofollow" sur les pages qui les affichent) :
+        // aucun contenu à indexer, autant éviter que les robots les explorent
+        // inutilement et gaspillent le budget d'exploration du site.
+        "Disallow: /go/",
+        `Sitemap: ${SITE_URL}/sitemap.xml`,
+      ].join("\n");
+      send(req, res, 200, body, "text/plain; charset=utf-8");
       return;
     }
 
@@ -230,24 +267,24 @@ const server = createServer(async (req, res) => {
         `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
         urls.map((u) => `  <url><loc>${u}</loc></url>`).join("\n") +
         `\n</urlset>\n`;
-      send(res, 200, body, "application/xml; charset=utf-8");
+      send(req, res, 200, body, "application/xml; charset=utf-8");
       return;
     }
 
     // Cron externe (production) : GET /api/cron/import?token=...
     if (method === "GET" && path === "/api/cron/import") {
       if (url.searchParams.get("token") !== env.cronToken) {
-        send(res, 403, "Jeton invalide", "text/plain; charset=utf-8");
+        send(req, res, 403, "Jeton invalide", "text/plain; charset=utf-8");
         return;
       }
       const results = await runImport();
-      send(res, 200, JSON.stringify(results, null, 2), "application/json; charset=utf-8");
+      send(req, res, 200, JSON.stringify(results, null, 2), "application/json; charset=utf-8");
       return;
     }
 
     // Pages publiques
     if (method === "GET" && path === "/") {
-      send(res, 200, await homePage());
+      send(req, res, 200, await homePage());
       return;
     }
 
@@ -255,28 +292,28 @@ const server = createServer(async (req, res) => {
       const slug = path.slice("/categorie/".length);
       const sort = url.searchParams.get("tri") === "prix" ? "price" : "discount";
       const html = await categoryPage(slug, sort);
-      if (!html) return notFound(res);
-      send(res, 200, html);
+      if (!html) return notFound(req, res);
+      send(req, res, 200, html);
       return;
     }
 
     if (method === "GET" && path === "/recherche") {
-      send(res, 200, await searchPage(url.searchParams.get("q") ?? ""));
+      send(req, res, 200, await searchPage(url.searchParams.get("q") ?? ""));
       return;
     }
 
     if (method === "GET" && path.startsWith("/produit/")) {
       const id = Number(path.slice("/produit/".length));
       const html = Number.isFinite(id) ? await productPage(id) : null;
-      if (!html) return notFound(res);
-      send(res, 200, html);
+      if (!html) return notFound(req, res);
+      send(req, res, 200, html);
       return;
     }
 
     if (method === "GET" && path.startsWith("/go/")) {
       const offerId = Number(path.slice("/go/".length));
       const offer = Number.isFinite(offerId) ? await getOfferWithContext(offerId) : undefined;
-      if (!offer || !offer.active) return notFound(res);
+      if (!offer || !offer.active) return notFound(req, res);
       await logClick(offerId, hashIp(getClientIp(req)));
       res.writeHead(302, { Location: offer.affiliateUrl });
       res.end();
@@ -284,34 +321,34 @@ const server = createServer(async (req, res) => {
     }
 
     if (method === "GET" && path === "/guides") {
-      send(res, 200, await guidesIndexPage());
+      send(req, res, 200, await guidesIndexPage());
       return;
     }
 
     if (method === "GET" && path.startsWith("/guides/")) {
       const slug = path.slice("/guides/".length);
       const html = await guideArticlePage(slug);
-      if (!html) return notFound(res);
-      send(res, 200, html);
+      if (!html) return notFound(req, res);
+      send(req, res, 200, html);
       return;
     }
 
     if (method === "GET" && path === "/mentions-legales") {
-      send(res, 200, await mentionsLegalesPage());
+      send(req, res, 200, await mentionsLegalesPage());
       return;
     }
     if (method === "GET" && path === "/cgu") {
-      send(res, 200, await cguPage());
+      send(req, res, 200, await cguPage());
       return;
     }
     if (method === "GET" && path === "/confidentialite") {
-      send(res, 200, await confidentialitePage());
+      send(req, res, 200, await confidentialitePage());
       return;
     }
 
     // Connexion à l'espace admin (page HTML classique, avec cookie de session)
     if (method === "GET" && path === "/admin/login") {
-      send(res, 200, await adminLoginPage(parseFlash(url), url.searchParams.get("next") ?? undefined));
+      send(req, res, 200, await adminLoginPage(parseFlash(url), url.searchParams.get("next") ?? undefined));
       return;
     }
 
@@ -343,7 +380,7 @@ const server = createServer(async (req, res) => {
       }
 
       if (method === "GET" && path === "/admin") {
-        send(res, 200, await adminDashboardPage(parseFlash(url)));
+        send(req, res, 200, await adminDashboardPage(parseFlash(url)));
         return;
       }
 
@@ -355,7 +392,7 @@ const server = createServer(async (req, res) => {
       }
 
       if (method === "GET" && path === "/admin/offres/nouvelle") {
-        send(res, 200, await adminNewOfferPage(parseFlash(url)));
+        send(req, res, 200, await adminNewOfferPage(parseFlash(url)));
         return;
       }
 
@@ -385,7 +422,7 @@ const server = createServer(async (req, res) => {
       }
 
       if (method === "GET" && path === "/admin/offres") {
-        send(res, 200, await adminOffersPage(parseFlash(url)));
+        send(req, res, 200, await adminOffersPage(parseFlash(url)));
         return;
       }
 
@@ -395,8 +432,8 @@ const server = createServer(async (req, res) => {
 
         if (method === "GET") {
           const html = await adminDeleteOfferPage(offerId);
-          if (!html) return notFound(res);
-          send(res, 200, html);
+          if (!html) return notFound(req, res);
+          send(req, res, 200, html);
           return;
         }
 
@@ -413,10 +450,10 @@ const server = createServer(async (req, res) => {
       }
     }
 
-    notFound(res);
+    notFound(req, res);
   } catch (err) {
     console.error(err);
-    send(res, 500, "Erreur interne du serveur.", "text/plain; charset=utf-8");
+    send(req, res, 500, "Erreur interne du serveur.", "text/plain; charset=utf-8");
   }
 });
 
