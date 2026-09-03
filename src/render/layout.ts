@@ -116,8 +116,8 @@ export async function layout(opts: {
         ${navLinks}
         <a href="/guides">Guides</a>
       </nav>
-      <form class="search-form" action="/recherche" method="get">
-        <input type="search" name="q" placeholder="Rechercher un produit..." required />
+      <form class="search-form" action="/recherche" method="get" role="search">
+        <input type="search" name="q" placeholder="Rechercher un produit..." aria-label="Rechercher un produit" required />
         <button type="submit">Chercher</button>
       </form>
     </div>
