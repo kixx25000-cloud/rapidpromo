@@ -77,6 +77,11 @@ export async function layout(opts: {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(opts.title)} — RapidPromo</title>
   <meta name="description" content="${escapeHtml(description)}" />
+  <!-- Vérification de propriété Google Search Console (3 sept. 2026), demandée
+       par Kix pour que le site soit indexé et trouvable sur Google en
+       recherchant "RapidPromo" / "Rapide Promo". Ne pas supprimer, sinon la
+       vérification est perdue. -->
+  <meta name="google-site-verification" content="ridP1no9_kwJJ4LfI6QPWpiuuADJoWKbw-Qy5Exxztg" />
   ${opts.noindex ? '<meta name="robots" content="noindex" />\n  ' : ""}<link rel="canonical" href="${canonical}" />
   <!-- Les photos produit sont hébergées chez Amazon (m.media-amazon.com) sur
        presque toutes les pages : établir la connexion (DNS/TLS) à l'avance
