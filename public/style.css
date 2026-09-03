@@ -173,7 +173,11 @@ h2.section-title {
   border-radius: var(--radius);
   padding: 24px;
 }
-.product-detail img { width: 100%; border-radius: var(--radius); }
+/* aspect-ratio réserve l'espace de l'image avant son chargement (évite un
+   saut de mise en page — CLS, un signal Core Web Vitals) ; object-fit:
+   contain garde la photo entière sans la recadrer, avec un fond neutre pour
+   les images qui ne remplissent pas exactement ce ratio. */
+.product-detail img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: #f9fafb; border-radius: var(--radius); }
 .product-detail h1 { margin: 0 0 10px; font-size: 24px; }
 .product-detail .desc { color: var(--muted); margin-bottom: 18px; }
 
