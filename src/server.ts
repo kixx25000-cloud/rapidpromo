@@ -98,9 +98,17 @@ const server = createServer(async (req, res) => {
     const method = req.method ?? "GET";
 
     // Fichiers statiques
+    // Cache-Control : le fichier CSS ne change presque jamais, autant éviter
+    // que chaque page (toutes les pages le chargent) le re-télécharge à
+    // chaque visite — améliore la vitesse de chargement perçue, un signal
+    // utilisé par Google (Core Web Vitals) pour le classement.
     if (method === "GET" && path === "/style.css") {
       const css = await readFile(join(publicDir, "style.css"), "utf-8");
-      send(res, 200, css, "text/css; charset=utf-8");
+      res.writeHead(200, {
+        "Content-Type": "text/css; charset=utf-8",
+        "Cache-Control": "public, max-age=3600",
+      });
+      res.end(css);
       return;
     }
 
