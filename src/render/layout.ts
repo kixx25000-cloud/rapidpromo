@@ -78,6 +78,13 @@ export async function layout(opts: {
   <title>${escapeHtml(opts.title)} — RapidPromo</title>
   <meta name="description" content="${escapeHtml(description)}" />
   ${opts.noindex ? '<meta name="robots" content="noindex" />\n  ' : ""}<link rel="canonical" href="${canonical}" />
+  <!-- Les photos produit sont hébergées chez Amazon (m.media-amazon.com) sur
+       presque toutes les pages : établir la connexion (DNS/TLS) à l'avance
+       accélère l'affichage de la première image visible (LCP, un signal
+       Core Web Vitals utilisé par Google), sans bloquer le reste du
+       chargement de la page. -->
+  <link rel="preconnect" href="https://m.media-amazon.com" crossorigin />
+  <link rel="dns-prefetch" href="https://m.media-amazon.com" />
   <link rel="stylesheet" href="/style.css" />
   <script type="application/ld+json">${brandJsonLd}</script>
 
