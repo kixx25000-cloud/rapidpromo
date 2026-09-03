@@ -12,7 +12,6 @@ import { adminDashboardPage, adminNewOfferPage, adminLoginPage, adminOffersPage,
 import { deleteOffer, getAllActiveProductIds, getCategories, getOfferWithContext, insertManualOffer, logClick } from "./repo.js";
 import { hashIp } from "./util.js";
 import { runImport } from "./importer.js";
-import { ICONS } from "./icons-data.js";
 import { initSchema } from "./db.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -126,10 +125,18 @@ const server = createServer(async (req, res) => {
     }
     if (method === "GET" && path.startsWith("/icons/")) {
       const name = path.slice("/icons/".length);
-      const b64 = ICONS[name];
-      if (!b64) return notFound(res);
-      res.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "public, max-age=604800" });
-      res.end(Buffer.from(b64, "base64"));
+      // Nom de fichier strictement validé (évite toute tentative de
+      // traversée de répertoire) : icônes servies directement depuis
+      // /public/icons comme de vrais fichiers PNG, plus simple et plus
+      // fiable qu'un encodage base64 intégré dans le code source.
+      if (!/^[a-z0-9-]+\.png$/.test(name)) return notFound(res);
+      try {
+        const buf = await readFile(join(publicDir, "icons", name));
+        res.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "public, max-age=604800" });
+        res.end(buf);
+      } catch {
+        notFound(res);
+      }
       return;
     }
 
