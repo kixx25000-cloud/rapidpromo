@@ -23,11 +23,46 @@ function send(res: ServerResponse, status: number, body: string, contentType = "
   res.end(body);
 }
 
+// Page 404 habillée aux couleurs de RapidPromo plutôt qu'une page nue :
+// meilleure expérience pour un visiteur qui suit un vieux lien, et des liens
+// internes vers les pages clés pour ne pas perdre le visiteur (et aider les
+// moteurs de recherche à continuer d'explorer le site depuis n'importe quelle
+// URL cassée).
 function notFound(res: ServerResponse): void {
-  send(res, 404, `<!doctype html><meta charset="utf-8"><title>404</title>
-    <body style="font-family:system-ui;text-align:center;padding:80px;">
-      <h1>Page introuvable</h1><p><a href="/">Retour à l'accueil</a></p>
-    </body>`);
+  send(
+    res,
+    404,
+    `<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Page introuvable — RapidPromo</title>
+  <meta name="robots" content="noindex" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container bar">
+      <a href="/" class="logo">Rapid<span>Promo</span></a>
+    </div>
+  </header>
+  <main class="container" style="text-align:center; padding:60px 16px;">
+    <h1>404 — Page introuvable</h1>
+    <p style="color:#4b5563; margin-bottom:24px;">Cette page n'existe pas ou plus (l'offre est peut-être terminée).</p>
+    <p>
+      <a class="btn" href="/">Retour à l'accueil</a>
+    </p>
+    <p style="margin-top:24px;">
+      <a href="/categorie/high-tech">High-tech</a> ·
+      <a href="/categorie/maison">Maison &amp; électroménager</a> ·
+      <a href="/categorie/mode">Mode &amp; beauté</a> ·
+      <a href="/guides">Guides</a>
+    </p>
+  </main>
+</body>
+</html>`
+  );
 }
 
 async function readBody(req: IncomingMessage): Promise<URLSearchParams> {
