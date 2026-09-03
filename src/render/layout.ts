@@ -85,6 +85,7 @@ export async function layout(opts: {
        (Facebook, X, WhatsApp, Discord, etc.) -->
   <meta property="og:site_name" content="RapidPromo" />
   <meta property="og:type" content="website" />
+  <meta property="og:locale" content="fr_FR" />
   <meta property="og:title" content="${escapeHtml(opts.title)} — RapidPromo" />
   <meta property="og:description" content="${escapeHtml(description)}" />
   <meta property="og:url" content="${canonical}" />
