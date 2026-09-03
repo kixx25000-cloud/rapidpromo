@@ -11,6 +11,13 @@ import { escapeHtml, formatDate } from "../util.js";
 interface GuideArticle {
   slug: string;
   title: string;
+  // Titre court optionnel pour la balise <title> et les partages sociaux :
+  // certains titres d'article, riches et complets pour le lecteur (H1),
+  // dépassent la longueur affichée par Google dans les résultats de
+  // recherche (~60 caractères, suffixe "— RapidPromo" inclus) et seraient
+  // tronqués. Quand il est présent, metaTitle sert au <title>/og:title/
+  // twitter:title ; le H1 affiché sur la page reste toujours le titre complet.
+  metaTitle?: string;
   description: string;
   categorySlug: string | null;
   categoryLabel: string;
@@ -22,6 +29,7 @@ const ARTICLES: GuideArticle[] = [
   {
     slug: "quest-ce-que-rapidpromo",
     title: "RapidPromo : c'est quoi, comment ça marche et pourquoi comparer les promos ?",
+    metaTitle: "RapidPromo : c'est quoi et comment ça marche ?",
     description:
       "RapidPromo est un comparateur de promotions en ligne, gratuit et indépendant. Découvrez comment le site sélectionne les offres et comment en profiter.",
     categorySlug: null,
@@ -132,6 +140,7 @@ const ARTICLES: GuideArticle[] = [
   {
     slug: "calendrier-meilleures-periodes-soldes-promos",
     title: "Calendrier des promos 2026 : quand acheter le moins cher selon la catégorie",
+    metaTitle: "Calendrier des promos 2026 : quand acheter moins cher",
     description:
       "Soldes, French Days, Black Friday... le calendrier des meilleures périodes pour acheter en promo high-tech, maison et mode & beauté.",
     categorySlug: null,
@@ -154,6 +163,7 @@ const ARTICLES: GuideArticle[] = [
   {
     slug: "lien-affilie-comment-ca-marche",
     title: "Lien affilié RapidPromo : comment ça marche, et est-ce que ça change le prix ?",
+    metaTitle: "Lien affilié RapidPromo : comment ça marche ?",
     description:
       "RapidPromo utilise des liens d'affiliation pour se financer. Explication simple de ce que c'est, et pourquoi ça ne change rien au prix que vous payez.",
     categorySlug: null,
@@ -239,7 +249,7 @@ export async function guideArticlePage(slug: string): Promise<string | null> {
     : "";
 
   return layout({
-    title: article.title,
+    title: article.metaTitle ?? article.title,
     description: article.description,
     path: `/guides/${article.slug}`,
     body: `
