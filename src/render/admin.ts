@@ -5,6 +5,7 @@ import { escapeHtml, formatDate } from "../util.js";
 export async function adminLoginPage(flash?: { type: "success" | "error"; message: string }, next?: string): Promise<string> {
   return layout({
     title: "Connexion — Espace pro",
+    noindex: true,
     body: `
       <div style="max-width:380px; margin:60px auto;">
         <h1 style="margin-bottom:24px;">Connexion à l'espace pro</h1>
@@ -52,6 +53,7 @@ export async function adminDashboardPage(flash?: { type: "success" | "error"; me
 
   return layout({
     title: "Espace pro — Administration",
+    noindex: true,
     body: `
       <h1>Administration RapidPromo</h1>
       ${flashHtml(flash)}
@@ -89,6 +91,7 @@ export async function adminNewOfferPage(flash?: { type: "success" | "error"; mes
 
   return layout({
     title: "Ajouter une offre",
+    noindex: true,
     body: `
       <h1>Ajouter une offre manuellement</h1>
       <p style="color:#6b7280; max-width:560px;">Utile en attendant que vos flux d'affiliation soient branchés : cette offre apparaîtra sur le site comme les autres et sera comparée aux offres existantes du même produit.</p>
@@ -149,6 +152,7 @@ export async function adminOffersPage(flash?: { type: "success" | "error"; messa
 
   return layout({
     title: "Gérer les offres — Espace pro",
+    noindex: true,
     body: `
       <h1>Gérer les offres</h1>
       <p style="color:#6b7280; max-width:560px;">Toutes les offres publiées sur le site (actives et inactives). Supprimer une offre est définitif — utile par exemple pour retirer une offre de test.</p>
@@ -168,6 +172,7 @@ export async function adminDeleteOfferPage(offerId: number): Promise<string | nu
 
   return layout({
     title: "Confirmer la suppression — Espace pro",
+    noindex: true,
     body: `
       <div style="max-width:480px; margin:60px auto;">
         <h1>Confirmer la suppression</h1>
