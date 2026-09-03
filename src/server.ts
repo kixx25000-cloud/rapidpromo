@@ -289,6 +289,32 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    // "Digital Asset Links" : preuve que l'application Android RapidPromo
+    // (Play Store) et ce site sont bien détenus par la même personne, pour
+    // que l'appli s'affiche en plein écran sans barre d'adresse (technologie
+    // "Trusted Web Activity"). Fichier public, sans donnée sensible — attendu
+    // par Android à cette adresse exacte, générée avec PWABuilder le 3 sept.
+    if (method === "GET" && path === "/.well-known/assetlinks.json") {
+      const body = JSON.stringify(
+        [
+          {
+            relation: ["delegate_permission/common.handle_all_urls"],
+            target: {
+              namespace: "android_app",
+              package_name: "com.rapidpromo.twa",
+              sha256_cert_fingerprints: [
+                "23:3D:1B:D3:CE:C3:16:AA:C3:1F:FB:06:EB:E5:3A:8D:A2:F1:2B:0E:93:DD:31:48:E6:EE:E1:71:FA:11:49:2A",
+              ],
+            },
+          },
+        ],
+        null,
+        2
+      );
+      send(req, res, 200, body, "application/json; charset=utf-8");
+      return;
+    }
+
     // Cron externe (production) : GET /api/cron/import?token=...
     if (method === "GET" && path === "/api/cron/import") {
       if (url.searchParams.get("token") !== env.cronToken) {
