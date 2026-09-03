@@ -306,3 +306,11 @@ export async function guideArticlePage(slug: string): Promise<string | null> {
 export function getGuideSlugs(): string[] {
   return ARTICLES.map((a) => a.slug);
 }
+
+// Date de publication de chaque guide, pour indiquer une date de dernière
+// modification (lastmod) fiable dans le sitemap.xml — contrairement aux
+// fiches produit (dont la date de dernière modification réelle n'est pas
+// suivie), cette date est une vraie donnée du site, pas une estimation.
+export function getGuideMeta(): { slug: string; publishedAt: string }[] {
+  return ARTICLES.map((a) => ({ slug: a.slug, publishedAt: a.publishedAt }));
+}
