@@ -127,6 +127,20 @@ function getClientIp(req: IncomingMessage): string {
 
 const server = createServer(async (req, res) => {
   try {
+    // En-têtes de sécurité de base, appliqués à toutes les réponses (posés
+    // avant toute route pour ne rien oublier) : n'empêchent pas l'exploration
+    // par Google, mais réduisent la surface d'attaque du site.
+    // - nosniff : empêche le navigateur de deviner un autre type de contenu
+    //   qu'annoncé (protection contre certaines attaques par injection).
+    // - X-Frame-Options : interdit d'afficher RapidPromo dans une <iframe>
+    //   sur un autre site (protection anti-clickjacking).
+    // - Referrer-Policy : n'envoie l'URL complète comme référent qu'aux
+    //   sites de même origine, une URL simplifiée ailleurs — bon compromis
+    //   vie privée/statistiques, recommandation standard actuelle.
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+
     const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
     const path = url.pathname;
     const method = req.method ?? "GET";
