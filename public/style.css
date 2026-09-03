@@ -1,6 +1,11 @@
 :root {
   --brand: #ea580c;
   --brand-dark: #c2410c;
+  /* Utilisée uniquement pour le survol des boutons oranges : --brand seul
+     n'offre pas assez de contraste avec du texte blanc (environ 3,6:1, sous
+     le minimum recommandé de 4,5:1 pour du texte normal) — voir la note sur
+     .btn ci-dessous. */
+  --brand-darker: #9a3412;
   --ink: #1f2937;
   --muted: #6b7280;
   --bg: #f9fafb;
@@ -138,18 +143,24 @@ h2.section-title {
 .badge.merchant-count { background: #eef2ff; color: #4338ca; }
 .badge.ends-soon { background: #fee2e2; color: #b91c1c; }
 
+/* Fond en --brand-dark plutôt que --brand : le orange clair de la marque
+   n'offrait qu'un contraste d'environ 3,6:1 avec du texte blanc, sous le
+   minimum recommandé (4,5:1) pour du texte de taille normale — un vrai
+   problème d'accessibilité sur les boutons les plus importants du site
+   ("Profiter de l'offre"). --brand-dark offre environ 5,2:1, largement
+   suffisant, tout en restant clairement dans les tons orange de la marque. */
 .btn {
   display: inline-block;
   padding: 10px 16px;
   border-radius: var(--radius);
-  background: var(--brand);
+  background: var(--brand-dark);
   color: white;
   font-weight: 700;
   text-align: center;
   border: none;
   cursor: pointer;
 }
-.btn:hover { background: var(--brand-dark); }
+.btn:hover { background: var(--brand-darker); }
 .btn.secondary { background: var(--ink); }
 .btn.small { padding: 7px 12px; font-size: 13px; }
 
@@ -228,7 +239,9 @@ footer.site-footer .links a { text-decoration: underline; }
   font-weight: 700;
   cursor: pointer;
 }
-#cookie-banner .accept { background: var(--brand); color: white; }
+/* Même correction de contraste que .btn ci-dessus : --brand-dark plutôt que
+   --brand pour un fond avec texte blanc lisible. */
+#cookie-banner .accept { background: var(--brand-dark); color: white; }
 #cookie-banner .refuse { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.4); }
 
 .legal-page { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; max-width: 780px; }
