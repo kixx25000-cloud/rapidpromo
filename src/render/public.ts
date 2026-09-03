@@ -123,6 +123,13 @@ export async function searchPage(query: string): Promise<string> {
       ? `${deals.length} offre${deals.length > 1 ? "s" : ""} trouvée${deals.length > 1 ? "s" : ""} pour "${query}" sur RapidPromo, comparateur de promotions.`
       : "Recherchez un produit en promotion sur RapidPromo pour comparer les offres actives chez plusieurs marchands.",
     path: "/recherche",
+    // Les pages de résultats de recherche interne (une par mot-clé tapé) ne
+    // sont pas destinées à être indexées individuellement par Google — elles
+    // dupliquent le contenu déjà présent sur les pages catégorie/produit et
+    // pourraient gaspiller le budget d'exploration. "noindex" seul laisse
+    // Google continuer à suivre les liens vers les fiches produit depuis
+    // cette page.
+    noindex: true,
     body: `
       <div class="hero">
         <h1>${query ? `Résultats pour « ${escapeHtml(query)} »` : "Recherche"}</h1>
