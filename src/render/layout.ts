@@ -16,7 +16,14 @@ export async function layout(opts: {
   const categories = await getCategories();
   const description = opts.description ?? DEFAULT_DESCRIPTION;
   const canonical = SITE_URL + (opts.path ?? "/");
-  const image = opts.image ?? `${SITE_URL}/icons/icon-192.png`;
+  // Image par défaut pour les partages sur les réseaux sociaux (Facebook, X,
+  // WhatsApp, Discord...) : au format recommandé 1200x630, plutôt que la
+  // petite icône 192x192 utilisée avant, qui donnait un aperçu de mauvaise
+  // qualité (agrandie/rognée) sur les cartes de partage.
+  const image = opts.image ?? `${SITE_URL}/icons/og-image.png`;
+  const imageDimensions = opts.image
+    ? ""
+    : `\n  <meta property="og:image:width" content="1200" />\n  <meta property="og:image:height" content="630" />`;
   const navLinks = categories
     .map(
       (c) =>
@@ -76,7 +83,7 @@ export async function layout(opts: {
   <meta property="og:title" content="${escapeHtml(opts.title)} — RapidPromo" />
   <meta property="og:description" content="${escapeHtml(description)}" />
   <meta property="og:url" content="${canonical}" />
-  <meta property="og:image" content="${image}" />
+  <meta property="og:image" content="${image}" />${imageDimensions}
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${escapeHtml(opts.title)} — RapidPromo" />
   <meta name="twitter:description" content="${escapeHtml(description)}" />
