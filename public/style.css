@@ -241,6 +241,15 @@ footer.site-footer .links a { text-decoration: underline; }
   flex-wrap: wrap;
   z-index: 100;
 }
+/* BUG SIGNALÉ PAR KIX (3 sept.) : cliquer "Refuser"/"Accepter" ne faisait
+   rien, la barre restait affichée. Cause : le script pose bien l'attribut
+   HTML "hidden" sur la bannière, mais la règle "#cookie-banner { display:
+   flex }" ci-dessus (sélecteur d'ID, plus prioritaire) l'emportait sur la
+   règle "[hidden] { display: none }" du navigateur (sélecteur d'attribut,
+   moins prioritaire) — la bannière restait donc visible malgré l'attribut.
+   Cette règle, plus spécifique que les deux précédentes, corrige le
+   problème. */
+#cookie-banner[hidden] { display: none; }
 #cookie-banner p { margin: 0; font-size: 14px; max-width: 640px; }
 #cookie-banner .actions { display: flex; gap: 10px; }
 #cookie-banner button {
