@@ -11,6 +11,25 @@ import {
 } from "../repo.js";
 import { daysRemaining, escapeHtml, formatDate, formatPrice } from "../util.js";
 
+const SITE_URL = "https://rapidpromo.onrender.com";
+
+// Fil d'Ariane (breadcrumb) en données structurées schema.org : aide Google
+// à afficher le chemin de navigation (Accueil > Catégorie > Produit) dans
+// les résultats de recherche au lieu de la simple URL, et renforce le maillage
+// interne perçu par les moteurs de recherche.
+function breadcrumbJsonLd(items: { name: string; path?: string }[]): string {
+  return JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: item.name,
+      ...(item.path ? { item: `${SITE_URL}${item.path}` } : {}),
+    })),
+  });
+}
+
 export async function homePage(): Promise<string> {
   const deals = await getHomeDeals(12);
   const categories = await getCategories();
@@ -69,12 +88,18 @@ export async function categoryPage(slug: string, sort: "discount" | "price"): Pr
     ? `<p style="margin-top:24px; color:#6b7280;">📖 <a href="/guides/${relatedGuide.slug}">Lire ${relatedGuide.label}</a></p>`
     : "";
 
+  const breadcrumb = breadcrumbJsonLd([
+    { name: "Accueil", path: "/" },
+    { name: category.name },
+  ]);
+
   return layout({
     title: category.name,
     description: `Comparez les meilleures offres ${category.name.toLowerCase()} du moment sur RapidPromo : prix les plus bas chez plusieurs marchands partenaires, triés par réduction ou par prix.`,
     activeCategorySlug: slug,
     path: `/categorie/${slug}`,
     body: `
+      <script type="application/ld+json">${breadcrumb}</script>
       <div class="hero">
         <h1>${escapeHtml(category.name)}</h1>
         <p>${deals.length} produit${deals.length > 1 ? "s" : ""} en promotion en ce moment.</p>
@@ -116,6 +141,8 @@ export async function productPage(id: number): Promise<string | null> {
 
   const best = offers[0];
   const remaining = daysRemaining(best.endsAt);
+  const categories = await getCategories();
+  const category = categories.find((c) => c.id === product.categoryId);
 
   const rows = offers
     .map(
@@ -147,6 +174,12 @@ export async function productPage(id: number): Promise<string | null> {
     },
   });
 
+  const breadcrumb = breadcrumbJsonLd([
+    { name: "Accueil", path: "/" },
+    ...(category ? [{ name: category.name, path: `/categorie/${category.slug}` }] : []),
+    { name: product.title },
+  ]);
+
   return layout({
     title: product.title,
     description: product.description,
@@ -154,6 +187,7 @@ export async function productPage(id: number): Promise<string | null> {
     image: product.image,
     body: `
       <script type="application/ld+json">${jsonLd}</script>
+      <script type="application/ld+json">${breadcrumb}</script>
       <div class="product-detail">
         <div>
           <img src="${product.image}" alt="${escapeHtml(product.title)}" />
