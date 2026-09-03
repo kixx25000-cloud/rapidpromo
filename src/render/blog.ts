@@ -1,6 +1,25 @@
 import { layout } from "./layout.js";
 import { escapeHtml, formatDate } from "../util.js";
 
+const SITE_URL = "https://rapidpromo.onrender.com";
+
+// Fil d'Ariane (breadcrumb) en données structurées schema.org, identique à
+// celui utilisé sur les pages catégorie/produit (voir render/public.ts) :
+// aide Google à afficher le chemin de navigation dans les résultats de
+// recherche plutôt que la simple URL.
+function breadcrumbJsonLd(items: { name: string; path?: string }[]): string {
+  return JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: item.name,
+      ...(item.path ? { item: `${SITE_URL}${item.path}` } : {}),
+    })),
+  });
+}
+
 // Section "Guides" : contenu éditorial original (conseils d'achat, non lié à
 // un flux de produits), pensé pour le référencement naturel (SEO) — mots-clés
 // longue traîne par thématique, et pages supplémentaires qui renforcent la
@@ -215,12 +234,18 @@ export async function guidesIndexPage(): Promise<string> {
       </a>`
   ).join("\n");
 
+  const breadcrumb = breadcrumbJsonLd([
+    { name: "Accueil", path: "/" },
+    { name: "Guides" },
+  ]);
+
   return layout({
     title: "Guides & conseils",
     description:
       "Les guides RapidPromo : conseils pratiques pour bien acheter en promotion, par thématique (high-tech, maison, mode & beauté).",
     path: "/guides",
     body: `
+      <script type="application/ld+json">${breadcrumb}</script>
       <div class="hero">
         <h1>Guides &amp; conseils RapidPromo</h1>
         <p>Des conseils pratiques et indépendants pour profiter des promotions sans mauvaise surprise.</p>
@@ -248,12 +273,19 @@ export async function guideArticlePage(slug: string): Promise<string | null> {
     ? `<p><a href="/categorie/${article.categorySlug}">Voir les offres ${escapeHtml(article.categoryLabel.toLowerCase())} en ce moment →</a></p>`
     : "";
 
+  const breadcrumb = breadcrumbJsonLd([
+    { name: "Accueil", path: "/" },
+    { name: "Guides", path: "/guides" },
+    { name: article.title },
+  ]);
+
   return layout({
     title: article.metaTitle ?? article.title,
     description: article.description,
     path: `/guides/${article.slug}`,
     body: `
       <script type="application/ld+json">${jsonLd}</script>
+      <script type="application/ld+json">${breadcrumb}</script>
       <article class="legal-page">
         <p><a href="/guides">← Tous les guides</a></p>
         <h1>${escapeHtml(article.title)}</h1>
