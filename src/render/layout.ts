@@ -150,6 +150,7 @@ export async function layout(opts: {
       <div>RapidPromo compare des offres et perçoit une commission sur les achats réalisés via ses liens partenaires. Les prix et disponibilités sont susceptibles de changer sur le site du marchand.</div>
       <div class="links">
         <a href="/guides">Guides</a>
+        <a href="/application">Application Android</a>
         <a href="/mentions-legales">Mentions légales</a>
         <a href="/cgu">CGU</a>
         <a href="/confidentialite">Confidentialité &amp; cookies</a>
