@@ -140,6 +140,21 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    // Certains navigateurs et robots demandent systématiquement /favicon.ico
+    // à la racine, même quand la balise <link rel="icon"> pointe ailleurs.
+    // On réutilise la petite icône 32x32 existante plutôt que de dupliquer
+    // un fichier .ico séparé.
+    if (method === "GET" && path === "/favicon.ico") {
+      try {
+        const buf = await readFile(join(publicDir, "icons", "icon-32.png"));
+        res.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "public, max-age=604800" });
+        res.end(buf);
+      } catch {
+        notFound(res);
+      }
+      return;
+    }
+
     // Référencement (SEO) : robots.txt et sitemap.xml, générés dynamiquement
     // à partir des catégories et offres actives, pour que Google découvre
     // et indexe toutes les pages du site.
