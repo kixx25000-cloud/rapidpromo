@@ -11,7 +11,18 @@
   --bg: #f9fafb;
   --card: #ffffff;
   --border: #e5e7eb;
-  --ok: #059669;
+  /* #059669 (vert plus clair, gardé en commentaire) n'offrait qu'environ
+     3,77:1 de contraste avec un fond blanc, sous le minimum recommandé
+     (4,5:1) pour du texte normal — utilisé pour l'indicateur "OK" des
+     imports dans l'espace admin. #047857 (même vert que le texte des
+     messages de succès plus bas) offre environ 5,5:1. */
+  --ok: #047857;
+  /* Couleur du logo "Rapid" en haut du site, demandée par Kix (bleu plutôt
+     que l'orange de la marque) — variable séparée de --brand pour ne changer
+     que le logo, sans toucher aux autres usages de --brand (soulignement au
+     survol du menu, bordure des espaces "à compléter"). #2563eb offre un bon
+     contraste (~5,2:1) sur fond blanc. */
+  --logo-color: #2563eb;
   --radius: 10px;
 }
 
@@ -53,7 +64,7 @@ header.site-header {
 .logo {
   font-size: 22px;
   font-weight: 800;
-  color: var(--brand);
+  color: var(--logo-color);
   letter-spacing: -0.02em;
 }
 .logo span { color: var(--ink); }
