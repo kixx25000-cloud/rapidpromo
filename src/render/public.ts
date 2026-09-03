@@ -165,12 +165,14 @@ export async function productPage(id: number): Promise<string | null> {
     name: product.title,
     description: product.description,
     image: product.image,
+    url: `${SITE_URL}/produit/${id}`,
     offers: {
       "@type": "AggregateOffer",
       priceCurrency: "EUR",
       lowPrice: best.price,
       offerCount: offers.length,
       availability: "https://schema.org/InStock",
+      priceValidUntil: best.endsAt.slice(0, 10),
     },
   });
 
