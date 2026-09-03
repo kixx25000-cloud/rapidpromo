@@ -8,7 +8,7 @@ import { gzipSync } from "node:zlib";
 
 import { homePage, categoryPage, productPage, searchPage } from "./render/public.js";
 import { mentionsLegalesPage, cguPage, confidentialitePage } from "./render/legal.js";
-import { guidesIndexPage, guideArticlePage, getGuideSlugs } from "./render/blog.js";
+import { guidesIndexPage, guideArticlePage, getGuideMeta } from "./render/blog.js";
 import { adminDashboardPage, adminNewOfferPage, adminLoginPage, adminOffersPage, adminDeleteOfferPage } from "./render/admin.js";
 import { deleteOffer, getAllActiveProductIds, getCategories, getOfferWithContext, insertManualOffer, logClick } from "./repo.js";
 import { hashIp } from "./util.js";
@@ -255,17 +255,23 @@ const server = createServer(async (req, res) => {
     if (method === "GET" && path === "/sitemap.xml") {
       const categories = await getCategories();
       const productIds = await getAllActiveProductIds();
-      const urls = [
-        `${SITE_URL}/`,
-        `${SITE_URL}/guides`,
-        ...categories.map((c) => `${SITE_URL}/categorie/${c.slug}`),
-        ...productIds.map((id) => `${SITE_URL}/produit/${id}`),
-        ...getGuideSlugs().map((slug) => `${SITE_URL}/guides/${slug}`),
+      // "lastmod" (date de dernière modification) n'est renseignée que pour
+      // les guides, dont la date de publication est une vraie donnée du
+      // site — pour les autres pages (produits, catégories), inventer une
+      // date serait un signal trompeur pour Google, mieux vaut l'omettre.
+      const urls: { loc: string; lastmod?: string }[] = [
+        { loc: `${SITE_URL}/` },
+        { loc: `${SITE_URL}/guides` },
+        ...categories.map((c) => ({ loc: `${SITE_URL}/categorie/${c.slug}` })),
+        ...productIds.map((id) => ({ loc: `${SITE_URL}/produit/${id}` })),
+        ...getGuideMeta().map((g) => ({ loc: `${SITE_URL}/guides/${g.slug}`, lastmod: g.publishedAt })),
       ];
       const body =
         `<?xml version="1.0" encoding="UTF-8"?>\n` +
         `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-        urls.map((u) => `  <url><loc>${u}</loc></url>`).join("\n") +
+        urls
+          .map((u) => `  <url><loc>${u.loc}</loc>${u.lastmod ? `<lastmod>${u.lastmod}</lastmod>` : ""}</url>`)
+          .join("\n") +
         `\n</urlset>\n`;
       send(req, res, 200, body, "application/xml; charset=utf-8");
       return;
