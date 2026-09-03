@@ -124,7 +124,7 @@ export async function productPage(id: number): Promise<string | null> {
         <td>${formatPrice(o.price)}${o.oldPrice ? ` <span class="price-old">${formatPrice(o.oldPrice)}</span>` : ""}</td>
         <td>${o.discountPct ? `-${o.discountPct}%` : "—"}</td>
         <td>${formatDate(o.endsAt)}</td>
-        <td><a class="btn small" href="/go/${o.id}" rel="sponsored nofollow">${i === 0 ? "Profiter de l'offre" : "Voir l'offre"}</a></td>
+        <td><a class="btn small" href="/go/${o.id}" rel="sponsored nofollow noopener" target="_blank">${i === 0 ? "Profiter de l'offre" : "Voir l'offre"}</a></td>
       </tr>`
     )
     .join("\n");
