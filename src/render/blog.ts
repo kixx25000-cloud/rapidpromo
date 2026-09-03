@@ -259,14 +259,20 @@ export async function guideArticlePage(slug: string): Promise<string | null> {
   const article = ARTICLES.find((a) => a.slug === slug);
   if (!article) return null;
 
+  // "image" et "mainEntityOfPage" sont recommandés par Google pour les
+  // articles (données structurées Article) — les guides n'ayant pas de photo
+  // dédiée, on réutilise l'image de partage par défaut du site plutôt que de
+  // laisser le champ absent.
   const jsonLd = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "Article",
     headline: article.title,
     description: article.description,
+    image: `${SITE_URL}/icons/og-image.png`,
     datePublished: article.publishedAt,
     author: { "@type": "Organization", name: "RapidPromo" },
     publisher: { "@type": "Organization", name: "RapidPromo" },
+    mainEntityOfPage: `${SITE_URL}/guides/${article.slug}`,
   });
 
   const categoryLink = article.categorySlug
