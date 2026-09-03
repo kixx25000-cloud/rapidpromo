@@ -162,9 +162,21 @@ const server = createServer(async (req, res) => {
     // - Referrer-Policy : n'envoie l'URL complète comme référent qu'aux
     //   sites de même origine, une URL simplifiée ailleurs — bon compromis
     //   vie privée/statistiques, recommandation standard actuelle.
+    // - Strict-Transport-Security : Render sert déjà le site uniquement en
+    //   HTTPS, cet en-tête dit explicitement au navigateur de ne plus jamais
+    //   essayer une version non chiffrée de rapidpromo.onrender.com pendant
+    //   un an — protection contre une future tentative d'interception sur
+    //   un réseau non fiable. Sans "preload" (démarche séparée, hors-code,
+    //   à ne pas engager sans en discuter) ni "includeSubDomains" (aucun
+    //   sous-domaine utilisé actuellement).
+    // - Permissions-Policy : RapidPromo n'a besoin d'aucune de ces
+    //   fonctionnalités du navigateur ; les désactiver explicitement réduit
+    //   la surface d'attaque si un script tiers était un jour compromis.
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "SAMEORIGIN");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("Strict-Transport-Security", "max-age=31536000");
+    res.setHeader("Permissions-Policy", "geolocation=(), camera=(), microphone=(), payment=()");
 
     const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
     const path = url.pathname;
