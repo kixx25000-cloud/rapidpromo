@@ -9,6 +9,7 @@ import { gzipSync } from "node:zlib";
 import { homePage, categoryPage, productPage, searchPage } from "./render/public.js";
 import { mentionsLegalesPage, cguPage, confidentialitePage } from "./render/legal.js";
 import { guidesIndexPage, guideArticlePage, getGuideMeta } from "./render/blog.js";
+import { appDownloadPage } from "./render/app.js";
 import { adminDashboardPage, adminNewOfferPage, adminLoginPage, adminOffersPage, adminDeleteOfferPage } from "./render/admin.js";
 import { deleteOffer, getAllActiveProductIds, getCategories, getOfferWithContext, insertManualOffer, logClick } from "./repo.js";
 import { hashIp } from "./util.js";
@@ -227,6 +228,29 @@ const server = createServer(async (req, res) => {
       } catch {
         notFound(req, res);
       }
+      return;
+    }
+
+    // Téléchargement direct de l'application Android (.apk), en attendant la
+    // publication officielle sur le Google Play Store (voir /application).
+    // Content-Disposition force le téléchargement sous un nom de fichier
+    // propre plutôt que d'ouvrir/afficher le binaire dans le navigateur.
+    if (method === "GET" && path === "/RapidPromo.apk") {
+      try {
+        const buf = await readFile(join(publicDir, "RapidPromo.apk"));
+        res.writeHead(200, {
+          "Content-Type": "application/vnd.android.package-archive",
+          "Content-Disposition": 'attachment; filename="RapidPromo.apk"',
+          "Cache-Control": "public, max-age=3600",
+        });
+        res.end(buf);
+      } catch {
+        notFound(req, res);
+      }
+      return;
+    }
+    if (method === "GET" && path === "/application") {
+      send(req, res, 200, await appDownloadPage());
       return;
     }
 
