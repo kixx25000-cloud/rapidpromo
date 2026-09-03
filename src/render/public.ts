@@ -180,6 +180,11 @@ export async function productPage(id: number): Promise<string | null> {
       offerCount: offers.length,
       availability: "https://schema.org/InStock",
       priceValidUntil: best.endsAt.slice(0, 10),
+      // Tous les produits comparés viennent de programmes d'affiliation
+      // officiels (Amazon...) : ce sont des articles neufs vendus par le
+      // marchand, jamais d'occasion ou reconditionnés — champ recommandé par
+      // Google pour les données structurées Offer.
+      itemCondition: "https://schema.org/NewCondition",
     },
   });
 
