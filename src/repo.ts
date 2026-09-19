@@ -173,7 +173,8 @@ export async function getHomeDeals(limit = 12): Promise<ProductWithBestPrice[]> 
 export async function getDealsByCategory(
   categoryId: number,
   sort: "discount" | "price" = "discount",
-  limit = 60
+  limit = 60,
+  offset = 0
 ): Promise<ProductWithBestPrice[]> {
   const orderBy =
     sort === "price" ? `"bestPrice" ASC` : `"bestDiscountPct" DESC NULLS LAST, "bestPrice" ASC`;
@@ -182,10 +183,27 @@ export async function getDealsByCategory(
      WHERE p.category_id = $1
      GROUP BY p.id, c.slug, c.name
      ORDER BY ${orderBy}
-     LIMIT $2`,
-    [categoryId, limit]
+     LIMIT $2 OFFSET $3`,
+    [categoryId, limit, offset]
   );
   return rows as ProductWithBestPrice[];
+}
+
+// Nombre total de produits actifs dans une catégorie : sert à calculer le
+// nombre de pages pour la pagination des pages catégorie (avant cet ajout,
+// seuls les 60 premiers produits d'une catégorie étaient accessibles en
+// navigant sur le site — les autres n'existaient que dans le sitemap.xml,
+// donc peu ou pas explorés par les visiteurs, et faiblement maillés en
+// interne pour les moteurs de recherche).
+export async function countDealsByCategory(categoryId: number): Promise<number> {
+  const { rows } = await pool.query(
+    `SELECT COUNT(DISTINCT p.id)::int AS count
+     FROM products p
+     JOIN offers o ON o.product_id = p.id AND o.active = 1
+     WHERE p.category_id = $1`,
+    [categoryId]
+  );
+  return (rows as { count: number }[])[0]?.count ?? 0;
 }
 
 export async function searchDeals(query: string, limit = 60): Promise<ProductWithBestPrice[]> {
