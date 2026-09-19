@@ -359,7 +359,9 @@ const server = createServer(async (req, res) => {
     if (method === "GET" && path.startsWith("/categorie/")) {
       const slug = path.slice("/categorie/".length);
       const sort = url.searchParams.get("tri") === "prix" ? "price" : "discount";
-      const html = await categoryPage(slug, sort);
+      const pageParam = Number(url.searchParams.get("page") ?? "1");
+      const page = Number.isFinite(pageParam) && pageParam >= 1 ? Math.floor(pageParam) : 1;
+      const html = await categoryPage(slug, sort, page);
       if (!html) return notFound(req, res);
       send(req, res, 200, html);
       return;
