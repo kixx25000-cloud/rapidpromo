@@ -17,6 +17,16 @@ const DEFAULT_CATEGORIES: Array<{ slug: string; name: string }> = [
   { slug: "high-tech", name: "High-tech" },
   { slug: "maison", name: "Maison & Électroménager" },
   { slug: "mode", name: "Mode & Beauté" },
+{ slug: "bricolage", name: "Bricolage" },
+{ slug: "jardin", name: "Jardin" },
+{ slug: "jeux-jouets", name: "Jeux & Jouets" },
+{ slug: "auto-moto", name: "Auto & Moto" },
+{ slug: "animalerie", name: "Animalerie" },
+{ slug: "bebe-puericulture", name: "Bébé & Puériculture" },
+{ slug: "sports-loisirs", name: "Sports & Loisirs" },
+{ slug: "epicerie", name: "Épicerie" },
+{ slug: "bureau", name: "Fournitures de bureau" },
+{ slug: "jeux-video", name: "Jeux vidéo" },
 ];
 
 // Crée les tables si elles n'existent pas encore, et s'assure que les 3
